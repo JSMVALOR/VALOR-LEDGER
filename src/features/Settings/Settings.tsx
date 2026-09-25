@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { User, Bell, Shield, Key, Save } from 'lucide-react';
 import { useStore } from '../../lib/store';
 

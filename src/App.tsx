@@ -37,8 +37,7 @@ function MainRouter() {
           <Route path="calendar" element={<Calendar />} />
           <Route path="tasks" element={<Tasks />} />
           <Route path="settings" element={<Settings />} />
-
-          <Route path="settings" element={<Settings />} />
+          <Route path="easy-contact" element={<EasyContact />} />
           <Route path="processed-leads" element={<ProcessedLeads />} />
           {/* Catch-all redirect to dashboard */}
           <Route path="*" element={<Navigate to="/" replace />} />

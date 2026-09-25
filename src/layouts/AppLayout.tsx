@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Home, Users, Briefcase, Calendar, CheckSquare, FileText, BarChart2, Settings, Plus, Phone, CheckCircle2, Mail, Globe, MapPin, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
+import { Home, Users, Briefcase, Calendar, CheckSquare, Settings, Plus, Phone, CheckCircle2, Mail, Globe, MapPin, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
 
 import ValorLogo from '../components/shared/ValorLogo';
 import { useStore, type SelectedItem } from '../lib/store';
