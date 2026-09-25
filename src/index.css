@@ -1,0 +1,77 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 255 255 255;
+    --foreground: 17 24 39;
+    --surface: 249 250 251;
+    --border: 229 231 235;
+    --input: 243 244 246;
+    --primary: 225 6 0; /* Premium Red */
+    --primary-foreground: 255 255 255;
+    --secondary: 243 244 246;
+    --secondary-foreground: 17 24 39;
+    --muted: 243 244 246;
+    --muted-foreground: 107 114 128;
+    --card: 255 255 255;
+    --card-foreground: 17 24 39;
+  }
+
+  .dark {
+    --background: 0 0 0;
+    --foreground: 243 244 246;
+    --surface: 28 28 30;
+    --border: 42 42 42;
+    --input: 30 30 30;
+    --primary: 212 175 55;
+    --primary-foreground: 0 0 0;
+    --secondary: 44 44 46;
+    --secondary-foreground: 243 244 246;
+    --muted: 44 44 46;
+    --muted-foreground: 142 142 147;
+    --card: 28 28 30;
+    --card-foreground: 243 244 246;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  ::selection {
+    background-color: rgb(var(--primary));
+    color: black;
+  }
+  
+  /* Premium scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: rgb(var(--background)); 
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--border));
+    border-radius: 10px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--primary)); 
+  }
+}
+
+@layer utilities {
+  .font-numeric {
+    font-variant-numeric: tabular-nums;
+  }
+  .smooth-transition {
+    @apply transition-all duration-300 ease-in-out;
+  }
+  .glass-panel {
+    @apply bg-surface/80 backdrop-blur-md border border-border;
+  }
+}

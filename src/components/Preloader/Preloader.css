@@ -1,0 +1,118 @@
+
+
+
+.preloader-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgb(var(--background));
+    
+    z-index: 9999999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+.zooming.preloader-overlay,
+.done.preloader-overlay {
+    background-color: transparent;
+    opacity: 0;
+    pointer-events: none;
+}
+
+
+.preloader-logo-wrapper {
+    position: fixed;
+    top: 50vh;
+    left: 50vw;
+    width: 300px;
+    transform: translate(-50%, -50%) scale3d(1, 1, 1);
+    will-change: transform, opacity, filter;
+    transition: transform 0.8s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.6s ease-out, filter 0.5s ease;
+    z-index: 10001;
+}
+
+
+.zooming .preloader-logo-wrapper {
+    transform: translate(-50%, -50%) scale3d(45, 45, 1);
+    opacity: 0;
+    filter: blur(10px);
+}
+
+
+
+
+.jsm-scale-path {
+    fill: transparent;
+    stroke: #FF2E23;
+    
+    stroke-width: 2.5px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+
+    
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+}
+
+
+.drawing .path-1 {
+    animation: drawPath 1s cubic-bezier(0.25, 1, 0.5, 1) 0s forwards;
+}
+
+.drawing .path-2 {
+    animation: drawPath 1s cubic-bezier(0.25, 1, 0.5, 1) 0.2s forwards;
+}
+
+.drawing .path-3 {
+    animation: drawPath 0.8s cubic-bezier(0.25, 1, 0.5, 1) 0.5s forwards;
+}
+
+.drawing .path-4 {
+    animation: drawPath 0.6s cubic-bezier(0.25, 1, 0.5, 1) 0.7s forwards;
+}
+
+@keyframes drawPath {
+    0% {
+        stroke-dashoffset: 100;
+    }
+
+    100% {
+        stroke-dashoffset: 0;
+    }
+}
+
+
+
+
+
+.filling .jsm-scale-path,
+.zooming .jsm-scale-path {
+    stroke-dashoffset: 0;
+    
+    fill: #FF2E23;
+    stroke: transparent;
+    transition: fill 0.6s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.6s ease;
+}
+
+
+.filling .animated-logo,
+.zooming .animated-logo {
+    filter: drop-shadow(0 0 25px rgba(255, 46, 35, 0.5));
+}
+
+
+
+
+@media (max-width: 768px) {
+    .preloader-logo-wrapper {
+        width: 220px;
+    }
+}
+
+@media (max-width: 480px) {
+    .preloader-logo-wrapper {
+        width: 180px;
+    }
+}
