@@ -10,12 +10,12 @@ import AppLayout from './layouts/AppLayout';
 import { Login } from './features/Auth/Login';
 import { DashboardCharts as Dashboard } from './features/Dashboard/Dashboard';
 import { LeadsPage as Leads } from './features/Leads/Leads';
+import { Settings } from './features/Settings/Settings';
+
 import { IncompleteLeadsPage as IncompleteLeads } from './features/Leads/IncompleteLeads';
 import { CompaniesPage as Companies } from './features/Companies/Companies';
 import { Calendar } from './features/Calendar/Calendar';
 import { Tasks } from './features/Tasks/Tasks';
-import { Documents } from './features/Documents/Documents';
-import { Analytics } from './features/Analytics/Analytics';
 import { Settings } from './features/Settings/Settings';
 import { EasyContact } from './features/EasyContact/EasyContact';
 import { ProcessedLeads } from './features/ProcessedLeads/ProcessedLeads';
@@ -37,8 +37,8 @@ function MainRouter() {
           <Route path="companies" element={<Companies />} />
           <Route path="calendar" element={<Calendar />} />
           <Route path="tasks" element={<Tasks />} />
-          <Route path="documents" element={<Documents />} />
-          <Route path="analytics" element={<Analytics />} />
+          <Route path="settings" element={<Settings />} />
+
           <Route path="settings" element={<Settings />} />
           <Route path="easy-contact" element={<EasyContact />} />
           <Route path="processed-leads" element={<ProcessedLeads />} />

@@ -94,8 +94,9 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     setEvents(prev => [{ ...eventData, id: Math.random().toString(36).substr(2, 9) }, ...prev]);
   };
 
-  const validLeads = leads.filter(l => l.phone && l.phone !== 'N/A' && l.website && l.website !== '');
-  const incompleteLeads = leads.filter(l => !l.phone || l.phone === 'N/A' || !l.website || l.website === '');
+  const hasContactInfo = (l: Lead) => (l.phone && l.phone !== 'N/A') || (l.website && l.website !== '') || (l.email && l.email !== '');
+  const validLeads = leads.filter(hasContactInfo);
+  const incompleteLeads = leads.filter(l => !hasContactInfo(l));
 
   return (
     <StoreContext.Provider value={{ 

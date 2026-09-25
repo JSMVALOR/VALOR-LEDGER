@@ -1,37 +1,83 @@
-import { Settings as SettingsIcon } from 'lucide-react';
-import { motion } from "framer-motion";
-import ThemeSwitcher from '../../components/shared/ThemeSwitcher';
+import { useState } from 'react';
+import { User, Bell, Shield, Key, Save } from 'lucide-react';
+import { useStore } from '../../lib/store';
 
 export function Settings() {
+  const { currentUser } = useStore();
+  
   return (
-    <div className="flex h-full w-full items-center justify-center p-6">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.2, ease: "easeOut" }}
-        className="flex flex-col items-center text-center max-w-md p-10 bg-card border border-border shadow-2xl rounded-2xl relative"
-      >
-        <div className="absolute top-4 right-4">
-          <ThemeSwitcher />
+    <div className="flex-1 flex flex-col h-full bg-background overflow-hidden relative">
+      <div className="flex-none p-6 border-b border-border bg-surface/50 backdrop-blur-sm relative z-10 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Settings</h1>
+          <p className="text-muted-foreground mt-1 text-sm">Manage your account preferences and CRM configurations.</p>
         </div>
-        <div className="flex h-16 w-16 items-center justify-center border border-border bg-surface mb-6 rounded-xl text-primary shadow-inner">
-          <SettingsIcon className="h-8 w-8" strokeWidth={1} />
+      </div>
+      
+      <div className="flex-1 overflow-y-auto p-6 relative z-0">
+        <div className="max-w-4xl mx-auto space-y-6">
+          
+          <div className="bg-surface/50 border border-border rounded-xl p-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-primary/10 text-primary rounded-lg"><User className="w-5 h-5" /></div>
+              <h2 className="text-lg font-semibold text-foreground">Profile Settings</h2>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Display Name</label>
+                <input type="text" defaultValue={currentUser || ''} className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:border-primary transition-colors text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Email Address</label>
+                <input type="email" defaultValue={`${currentUser || 'admin'}@valorledger.com`} className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:border-primary transition-colors text-sm" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-surface/50 border border-border rounded-xl p-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-primary/10 text-primary rounded-lg"><Bell className="w-5 h-5" /></div>
+              <h2 className="text-lg font-semibold text-foreground">Notifications</h2>
+            </div>
+            
+            <div className="space-y-4">
+              <label className="flex items-center justify-between cursor-pointer group">
+                <span className="text-sm font-medium text-foreground">Email Alerts for New Leads</span>
+                <input type="checkbox" defaultChecked className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 accent-primary" />
+              </label>
+              <label className="flex items-center justify-between cursor-pointer group">
+                <span className="text-sm font-medium text-foreground">Daily Task Reminders</span>
+                <input type="checkbox" defaultChecked className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 accent-primary" />
+              </label>
+              <label className="flex items-center justify-between cursor-pointer group">
+                <span className="text-sm font-medium text-foreground">Weekly Performance Report</span>
+                <input type="checkbox" className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 accent-primary" />
+              </label>
+            </div>
+          </div>
+
+          <div className="bg-surface/50 border border-border rounded-xl p-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-primary/10 text-primary rounded-lg"><Shield className="w-5 h-5" /></div>
+              <h2 className="text-lg font-semibold text-foreground">Security</h2>
+            </div>
+            
+            <div className="space-y-4">
+              <button className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-colors border border-border rounded-lg px-4 py-2 bg-background hover:bg-surface">
+                <Key className="w-4 h-4" /> Change Password
+              </button>
+            </div>
+          </div>
+          
+          <div className="flex justify-end pt-4">
+            <button className="flex items-center gap-2 px-6 py-2.5 bg-primary text-black rounded-lg text-sm font-bold hover:bg-primary/90 smooth-transition shadow-lg shadow-primary/20">
+              <Save className="w-4 h-4" /> Save Preferences
+            </button>
+          </div>
+
         </div>
-        <h2 className="text-xl font-mono font-bold tracking-widest uppercase text-foreground mb-3">
-          Settings
-        </h2>
-        <p className="text-muted-foreground font-mono text-xs leading-relaxed mb-4">
-          This workspace is configured to use frontend-only storage as the source of truth.
-        </p>
-        <div className="bg-surface/50 border border-border p-4 rounded-lg w-full text-left">
-          <p className="text-xs text-muted-foreground mb-2"><strong>How to update data:</strong></p>
-          <ul className="text-xs text-muted-foreground list-disc list-inside space-y-1">
-            <li>Open <code className="bg-background px-1 py-0.5 rounded text-primary">src/lib/data.ts</code></li>
-            <li>Modify the static arrays</li>
-            <li>Commit and push your changes</li>
-          </ul>
-        </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

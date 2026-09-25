@@ -162,21 +162,25 @@ export function EasyContact() {
               )}
               
               {/* Quick Status Update */}
-              <div className="flex items-center justify-between gap-2">
-                <select 
-                  value={lead.stage}
-                  onChange={(e) => updateLeadStage(lead.id, e.target.value as any)}
-                  className="flex-1 bg-background border border-border rounded px-2 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary transition-colors appearance-none text-center cursor-pointer"
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                <button 
+                  onClick={() => updateLeadStage(lead.id, 'Contacted')}
+                  className="bg-background hover:bg-primary/20 border border-border hover:border-primary text-xs font-semibold py-1.5 rounded smooth-transition"
                 >
-                  <option value="New">New</option>
-                  <option value="Contacted">Contacted</option>
-                  <option value="Qualified">Qualified</option>
-                  <option value="Meeting Scheduled">Meeting Scheduled</option>
-                  <option value="Proposal Sent">Proposal Sent</option>
-                  <option value="Negotiation">Negotiation</option>
-                  <option value="Won">Won</option>
-                  <option value="Lost">Lost</option>
-                </select>
+                  Mark Contacted
+                </button>
+                <button 
+                  onClick={() => updateLeadStage(lead.id, 'Qualified')}
+                  className="bg-background hover:bg-green-500/20 border border-border hover:border-green-500 text-xs font-semibold py-1.5 rounded smooth-transition"
+                >
+                  Qualified
+                </button>
+                <button 
+                  onClick={() => updateLeadStage(lead.id, 'Meeting Scheduled')}
+                  className="bg-background hover:bg-blue-500/20 border border-border hover:border-blue-500 text-xs font-semibold py-1.5 rounded smooth-transition col-span-2"
+                >
+                  Meeting Scheduled
+                </button>
               </div>
             </div>
           </motion.div>

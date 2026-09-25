@@ -3,7 +3,6 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Home, Users, Briefcase, Calendar, CheckSquare, FileText, BarChart2, Settings, Plus, Phone, Search, CheckCircle2, Mail, Globe, MapPin, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
 
 import ValorLogo from '../components/shared/ValorLogo';
-import ThemeSwitcher from '../components/shared/ThemeSwitcher';
 import { useStore, type SelectedItem } from '../lib/store';
 
 function RightSidebarDetails({ item }: { item: SelectedItem }) {
@@ -181,8 +180,6 @@ export default function AppLayout() {
           <NavItem to="/processed-leads" icon={CheckCircle2} label="Processed" />
           <NavItem to="/calendar" icon={Calendar} label="Calendar" />
           <NavItem to="/tasks" icon={CheckSquare} label="Tasks" />
-          <NavItem to="/documents" icon={FileText} label="Documents" />
-          <NavItem to="/analytics" icon={BarChart2} label="Analytics" />
         </nav>
 
         <div className="pt-4 border-t border-border mt-auto">
@@ -200,7 +197,6 @@ export default function AppLayout() {
             <span>{location.pathname === '/' ? 'Dashboard' : location.pathname.substring(1).replace('-', ' ')}</span>
           </div>
           <div className="flex items-center gap-4">
-            <ThemeSwitcher />
             <Link to="/leads" className="bg-primary text-black px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 hover:bg-primary/90 smooth-transition">
               <Plus className="w-4 h-4" /> New Lead
             </Link>
