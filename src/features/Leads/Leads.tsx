@@ -46,11 +46,11 @@ export function LeadsPage() {
   const filteredLeads = useMemo(() => {
     return leads.filter(l => {
       const matchesSearch = 
-        l.company.toLowerCase().includes(search.toLowerCase()) || 
-        l.contactPerson.toLowerCase().includes(search.toLowerCase()) ||
-        l.phone.includes(search);
-      const matchesCity = cityFilter === 'All' || l.city === cityFilter;
-      const matchesIndustry = industryFilter === 'All' || l.industry === industryFilter;
+        (l.company || "").toLowerCase().includes(search.toLowerCase()) || 
+        (l.contactPerson || "").toLowerCase().includes(search.toLowerCase()) ||
+        (l.phone || "").includes(search);
+      const matchesCity = cityFilter === 'All' || (l.city || "") === cityFilter;
+      const matchesIndustry = industryFilter === 'All' || (l.industry || "") === industryFilter;
       return matchesSearch && matchesCity && matchesIndustry;
     });
   }, [leads, search, cityFilter, industryFilter]);

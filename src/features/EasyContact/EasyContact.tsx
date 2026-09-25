@@ -27,11 +27,11 @@ export function EasyContact() {
   const filteredLeads = useMemo(() => {
     return newLeads.filter(lead => {
       const matchesSearch = 
-        lead.company.toLowerCase().includes(search.toLowerCase()) || 
-        lead.contactPerson.toLowerCase().includes(search.toLowerCase()) ||
-        lead.phone.includes(search);
-      const matchesIndustry = industryFilter === 'All' || lead.industry === industryFilter;
-      const matchesCity = cityFilter === 'All' || lead.city === cityFilter;
+        (lead.company || "").toLowerCase().includes(search.toLowerCase()) || 
+        (lead.contactPerson || "").toLowerCase().includes(search.toLowerCase()) ||
+        (lead.phone || "").includes(search);
+      const matchesIndustry = industryFilter === 'All' || (lead.industry || "") === industryFilter;
+      const matchesCity = cityFilter === 'All' || (lead.city || "") === cityFilter;
       return matchesSearch && matchesIndustry && matchesCity;
     });
   }, [newLeads, search, industryFilter, cityFilter]);

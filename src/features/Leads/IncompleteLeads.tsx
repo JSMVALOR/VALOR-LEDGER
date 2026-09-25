@@ -40,10 +40,10 @@ export function IncompleteLeadsPage() {
   const filteredLeads = useMemo(() => {
     return leads.filter(l => {
       const matchesSearch = 
-        l.company.toLowerCase().includes(search.toLowerCase()) || 
-        l.contactPerson.toLowerCase().includes(search.toLowerCase()) ||
-        l.phone.includes(search);
-      const matchesCity = cityFilter === 'All' || l.city === cityFilter;
+        (l.company || "").toLowerCase().includes(search.toLowerCase()) || 
+        (l.contactPerson || "").toLowerCase().includes(search.toLowerCase()) ||
+        (l.phone || "").includes(search);
+      const matchesCity = cityFilter === 'All' || (l.city || "") === cityFilter;
       return matchesSearch && matchesCity;
     });
   }, [leads, search, cityFilter]);

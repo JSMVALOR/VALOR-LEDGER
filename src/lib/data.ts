@@ -9407,26 +9407,32 @@ export const initialLeads: Lead[] = [
     createdAt: Date.now()
   },];
 export const initialCompanies: Company[] = [
-  { id: "c1", name: "Apex Legal Services", industry: "Legal", employees: "10-50", website: "apexlegal.com", city: "Chennai", phone: "+91 9876543210", email: "contact@apexlegal.com", lastContact: "2 days ago" },
-  { id: "c2", name: "Global Tech Solutions", industry: "Tech", employees: "50-200", website: "globaltech.in", city: "Bangalore", phone: "+91 9123456789", email: "info@globaltech.in", lastContact: "1 week ago" },
-  { id: "c3", name: "Prime Real Estate", industry: "Real Estate", employees: "1-10", website: "primereal.com", city: "Mumbai", phone: "+91 9988776655", email: "sales@primereal.com", lastContact: "3 days ago" },
-  { id: "c4", name: "Healthy Smiles Clinic", industry: "Clinic", employees: "10-50", website: "healthysmiles.in", city: "Hyderabad", phone: "+91 9876512345", email: "care@healthysmiles.in", lastContact: "Yesterday" },
-  { id: "c5", name: "Elite Fitness Hub", industry: "Gym", employees: "1-10", website: "elitefitness.com", city: "Delhi", phone: "+91 9000111222", email: "join@elitefitness.com", lastContact: "Today" },
-  { id: "c6", name: "Spicy Route Restaurant", industry: "Restaurant", employees: "10-50", website: "spicyroute.in", city: "Vijayawada", phone: "+91 9888222333", email: "hello@spicyroute.in", lastContact: "4 days ago" }
+  { id: "c0", name: "CANTER TECHNOLOGIES", industry: "Tech", employees: "10-50", website: "", city: "Vijayawada", phone: "", email: "", lastContact: "Today" },
+  { id: "c1", name: "C2C Tech Solutions", industry: "Tech", employees: "10-50", website: "", city: "Vijayawada", phone: "", email: "", lastContact: "Today" },
+  { id: "c2", name: "TECHIN IT PROCESS PRIVATE LIMITED", industry: "Tech", employees: "10-50", website: "", city: "Vijayawada", phone: "", email: "", lastContact: "Today" },
+  { id: "c3", name: "PINKMOON Technologies Private Limited", industry: "Tech", employees: "10-50", website: "", city: "Vijayawada", phone: "", email: "", lastContact: "Today" },
+  { id: "c4", name: "Wright Tech Software Solutions Pvt Ltd", industry: "Tech", employees: "10-50", website: "", city: "Vijayawada", phone: "", email: "", lastContact: "Today" },
+  { id: "c5", name: "Zoom Technologies", industry: "Training center", employees: "10-50", website: "", city: "Vijayawada", phone: "", email: "", lastContact: "Today" },
+  { id: "c6", name: "Supraja Technologies", industry: "Tech", employees: "10-50", website: "", city: "Vijayawada", phone: "", email: "", lastContact: "Today" },
+  { id: "c7", name: "SRK Institute of Technology", industry: "Tech", employees: "10-50", website: "", city: "Vijayawada", phone: "", email: "", lastContact: "Today" },
+  { id: "c8", name: "SipnaTech", industry: "Tech", employees: "10-50", website: "", city: "Vijayawada", phone: "", email: "", lastContact: "Today" },
+  { id: "c9", name: "SS FUTURETECH , Suryaraopet", industry: "Educational testing service", employees: "10-50", website: "", city: "Vijayawada", phone: "", email: "", lastContact: "Today" }
 ];
 export const initialTasks: Task[] = [
-  { id: "t1", title: "Call Apex Legal for follow up", due: "Today, 2:00 PM", priority: "High", completed: false },
-  { id: "t2", title: "Prepare proposal for Global Tech", due: "Tomorrow", priority: "Medium", completed: false },
-  { id: "t3", title: "Send contract to Prime Real Estate", due: "Next Week", priority: "Low", completed: false },
-  { id: "t4", title: "Review Elite Fitness requirements", due: "Today, 4:00 PM", priority: "High", completed: false }
+  { id: "t0", title: "Call CANTER TECHNOLOGIES for follow up", due: "Today", priority: "High", completed: false },
+  { id: "t1", title: "Call C2C Tech Solutions for follow up", due: "Today", priority: "High", completed: false },
+  { id: "t2", title: "Call TECHIN IT PROCESS PRIVATE LIMITED for follow up", due: "Today", priority: "High", completed: false },
+  { id: "t3", title: "Call PINKMOON Technologies Private Limited for follow up", due: "Today", priority: "High", completed: false }
 ];
 export const initialEvents: Event[] = [
-  { id: "e1", title: "Product Demo - Apex Legal", time: "Today, 3:00 PM - 4:00 PM", type: "Demo" },
-  { id: "e2", title: "Requirements Gathering", time: "Tomorrow, 11:00 AM - 12:00 PM", type: "Meeting" },
-  { id: "e3", title: "Negotiation Call", time: "Friday, 2:00 PM - 2:30 PM", type: "Call" }
+  { id: "e0", title: "Meeting with CANTER TECHNOLOGIES", time: "Tomorrow", type: "Meeting" },
+  { id: "e1", title: "Meeting with C2C Tech Solutions", time: "Tomorrow", type: "Meeting" },
+  { id: "e2", title: "Meeting with TECHIN IT PROCESS PRIVATE LIMITED", time: "Tomorrow", type: "Meeting" }
 ];
 export const initialActivities: Activity[] = [
-  { id: "a1", time: "2 hours ago", action: "Lead created:", target: "Apex Legal Services", user: "Swaroop" },
-  { id: "a2", time: "5 hours ago", action: "Meeting scheduled:", target: "Global Tech Solutions", user: "Vijay" },
-  { id: "a3", time: "Yesterday", action: "Sent proposal to", target: "Healthy Smiles Clinic", user: "Nithish" }
+  { id: "a0", time: "Recently", action: "Added new lead:", target: "CANTER TECHNOLOGIES", user: "System" },
+  { id: "a1", time: "Recently", action: "Added new lead:", target: "C2C Tech Solutions", user: "System" },
+  { id: "a2", time: "Recently", action: "Added new lead:", target: "TECHIN IT PROCESS PRIVATE LIMITED", user: "System" },
+  { id: "a3", time: "Recently", action: "Added new lead:", target: "PINKMOON Technologies Private Limited", user: "System" },
+  { id: "a4", time: "Recently", action: "Added new lead:", target: "Wright Tech Software Solutions Pvt Ltd", user: "System" }
 ];

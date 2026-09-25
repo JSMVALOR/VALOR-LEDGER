@@ -3,7 +3,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Users, Calendar, TrendingUp, CheckCircle, AlertCircle, Clock, ChevronRight } from 'lucide-react';
 import { useStore } from '../../lib/store';
 
-const COLORS = ['#D4AF37', '#8E8E93', '#F3F4F6', '#2C2C2E']; 
+const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444']; 
 
 const StatCard = ({ title, value, subValue, icon: Icon, trend }: any) => (
   <motion.div 
@@ -104,18 +104,18 @@ export function DashboardCharts() {
               <AreaChart data={revenueData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="#D4AF37" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2C2C2E" vertical={false} />
-                <XAxis dataKey="name" stroke="#8E8E93" fontSize={12} tickLine={false} axisLine={false} dy={10} />
-                <YAxis stroke="#8E8E93" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `₹${val/1000}k`} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+                <XAxis dataKey="name" stroke="#6B7280" fontSize={12} tickLine={false} axisLine={false} dy={10} />
+                <YAxis stroke="#6B7280" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `₹${val/1000}k`} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#1C1C1E', border: '1px solid #2C2C2E', borderRadius: '12px', color: '#F3F4F6' }}
-                  itemStyle={{ color: '#D4AF37', fontWeight: 'bold' }}
+                  contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #E5E7EB', borderRadius: '12px', color: '#111827' }}
+                  itemStyle={{ color: '#3B82F6', fontWeight: 'bold' }}
                 />
-                <Area type="monotone" dataKey="value" stroke="#D4AF37" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" />
+                <Area type="monotone" dataKey="value" stroke="#3B82F6" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -131,10 +131,10 @@ export function DashboardCharts() {
             <div className="flex-1 w-full min-h-[150px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={pipelineData} layout="vertical" margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2C2C2E" horizontal={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" horizontal={false} />
                   <XAxis type="number" hide />
-                  <YAxis dataKey="name" type="category" stroke="#8E8E93" fontSize={11} tickLine={false} axisLine={false} width={80} />
-                  <Tooltip cursor={{fill: '#1C1C1E'}} contentStyle={{ backgroundColor: '#1C1C1E', border: '1px solid #2C2C2E', borderRadius: '8px' }} />
+                  <YAxis dataKey="name" type="category" stroke="#6B7280" fontSize={11} tickLine={false} axisLine={false} width={80} />
+                  <Tooltip cursor={{fill: '#ffffff'}} contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #E5E7EB', borderRadius: '8px' }} />
                   <Bar dataKey="value" barSize={16} radius={[0, 4, 4, 0]}>
                     {pipelineData.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
