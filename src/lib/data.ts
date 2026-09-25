@@ -9407,12 +9407,12 @@ export const initialLeads: Lead[] = [
     createdAt: Date.now()
   },];
 export const initialCompanies: Company[] = [
-  { id: "c1", name: "Apex Legal Services", industry: "Legal", lastContact: "2 days ago" },
+  { id: "c1", name: "Apex Legal Services", industry: "Legal", employees: "10-50", website: "apexlegal.com", city: "Chennai", phone: "+91 9876543210", email: "contact@apexlegal.com", lastContact: "2 days ago" },
   { id: "c2", name: "Global Tech Solutions", industry: "Tech", employees: "50-200", website: "globaltech.in", city: "Bangalore", phone: "+91 9123456789", email: "info@globaltech.in", lastContact: "1 week ago" },
-  { id: "c3", name: "Prime Real Estate", industry: "Tech"primereal.com", city: "Mumbai", phone: "+91 9988776655", email: "sales@primereal.com", lastContact: "3 days ago" },
-  { id: "c4", name: "Healthy Smiles Clinic", industry: "Tech"healthysmiles.in", city: "Hyderabad", phone: "+91 9876512345", email: "care@healthysmiles.in", lastContact: "Yesterday" },
-  { id: "c5", name: "Elite Fitness Hub", industry: "Gym", lastContact: "Today" },
-  { id: "c6", name: "Spicy Route Restaurant", industry: "Tech"spicyroute.in", city: "Vijayawada", phone: "+91 9888222333", email: "hello@spicyroute.in", lastContact: "4 days ago" }
+  { id: "c3", name: "Prime Real Estate", industry: "Real Estate", employees: "1-10", website: "primereal.com", city: "Mumbai", phone: "+91 9988776655", email: "sales@primereal.com", lastContact: "3 days ago" },
+  { id: "c4", name: "Healthy Smiles Clinic", industry: "Clinic", employees: "10-50", website: "healthysmiles.in", city: "Hyderabad", phone: "+91 9876512345", email: "care@healthysmiles.in", lastContact: "Yesterday" },
+  { id: "c5", name: "Elite Fitness Hub", industry: "Gym", employees: "1-10", website: "elitefitness.com", city: "Delhi", phone: "+91 9000111222", email: "join@elitefitness.com", lastContact: "Today" },
+  { id: "c6", name: "Spicy Route Restaurant", industry: "Restaurant", employees: "10-50", website: "spicyroute.in", city: "Vijayawada", phone: "+91 9888222333", email: "hello@spicyroute.in", lastContact: "4 days ago" }
 ];
 export const initialTasks: Task[] = [
   { id: "t1", title: "Call Apex Legal for follow up", due: "Today, 2:00 PM", priority: "High", completed: false },
