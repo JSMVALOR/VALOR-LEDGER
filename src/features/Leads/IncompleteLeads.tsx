@@ -6,7 +6,7 @@ import { useStore } from '../../lib/store';
 import type { Lead, LeadStage, Priority } from '../../lib/store';
 
 export function IncompleteLeadsPage() {
-  const { leads, addLead, updateLeadStage, selectedItem, setSelectedItem } = useStore();
+  const { leads, addLead, selectedItem, setSelectedItem } = useStore();
   const [view, setView] = useState<'table' | 'kanban'>('table');
   const [search, setSearch] = useState('');
   const [cityFilter, setCityFilter] = useState('All');
@@ -52,8 +52,8 @@ export function IncompleteLeadsPage() {
     let sortableLeads = [...filteredLeads];
     if (sortConfig !== null) {
       sortableLeads.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
-        if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === 'asc' ? 1 : -1;
+        if ((a[sortConfig.key] ?? "") < (b[sortConfig.key] ?? "")) return sortConfig.direction === 'asc' ? -1 : 1;
+        if ((a[sortConfig.key] ?? "") > (b[sortConfig.key] ?? "")) return sortConfig.direction === 'asc' ? 1 : -1;
         return 0;
       });
     }

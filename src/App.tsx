@@ -16,7 +16,6 @@ import { IncompleteLeadsPage as IncompleteLeads } from './features/Leads/Incompl
 import { CompaniesPage as Companies } from './features/Companies/Companies';
 import { Calendar } from './features/Calendar/Calendar';
 import { Tasks } from './features/Tasks/Tasks';
-import { Settings } from './features/Settings/Settings';
 import { EasyContact } from './features/EasyContact/EasyContact';
 import { ProcessedLeads } from './features/ProcessedLeads/ProcessedLeads';
 
@@ -40,7 +39,6 @@ function MainRouter() {
           <Route path="settings" element={<Settings />} />
 
           <Route path="settings" element={<Settings />} />
-          <Route path="easy-contact" element={<EasyContact />} />
           <Route path="processed-leads" element={<ProcessedLeads />} />
           {/* Catch-all redirect to dashboard */}
           <Route path="*" element={<Navigate to="/" replace />} />

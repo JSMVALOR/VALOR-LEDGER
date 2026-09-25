@@ -33,7 +33,7 @@ export function DashboardCharts() {
   
   // Real data calculations
   const totalLeads = leads.length;
-  const activeLeads = leads.filter(l => l.stage !== 'Won' && l.stage !== 'Lost').length;
+  
   const totalValue = leads.reduce((acc, lead) => acc + (lead.value || 0), 0);
   const formattedValue = `₹${(totalValue / 1000).toFixed(1)}k`;
   const wonProjects = leads.filter(l => l.stage === 'Won').length;
@@ -136,7 +136,7 @@ export function DashboardCharts() {
                   <YAxis dataKey="name" type="category" stroke="#8E8E93" fontSize={11} tickLine={false} axisLine={false} width={80} />
                   <Tooltip cursor={{fill: '#1C1C1E'}} contentStyle={{ backgroundColor: '#1C1C1E', border: '1px solid #2C2C2E', borderRadius: '8px' }} />
                   <Bar dataKey="value" barSize={16} radius={[0, 4, 4, 0]}>
-                    {pipelineData.map((entry, index) => (
+                    {pipelineData.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Bar>
@@ -208,7 +208,7 @@ export function DashboardCharts() {
           >
              <h3 className="text-lg font-semibold text-foreground mb-4">Recent Activities</h3>
              <div className="space-y-4 max-h-[300px] overflow-y-auto">
-              {activities.map((log, i) => (
+              {activities.map((log) => (
                 <div key={log.id} className="flex items-start gap-3">
                   <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shadow-[0_0_8px_rgba(212,175,55,0.6)]"></div>
                   <div>
