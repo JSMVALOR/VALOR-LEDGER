@@ -14,12 +14,12 @@ export function EasyContact() {
 
   // Extract unique industries for the filter dropdown from new leads only
   const industries = useMemo(() => {
-    const set = new Set(newLeads.map(l => l.industry));
+    const set = new Set(newLeads.map(l => l.industry).filter(Boolean));
     return ['All', ...Array.from(set).sort()];
   }, [newLeads]);
 
   const cities = useMemo(() => {
-    const set = new Set(newLeads.map(l => l.city));
+    const set = new Set(newLeads.map(l => l.city).filter(Boolean));
     return ['All', ...Array.from(set).sort()];
   }, [newLeads]);
 
@@ -164,19 +164,19 @@ export function EasyContact() {
               {/* Quick Status Update */}
               <div className="grid grid-cols-2 gap-2 mt-2">
                 <button 
-                  onClick={() => updateLeadStage(lead.id, 'Contacted')}
+                  onClick={(e) => { e.stopPropagation(); updateLeadStage(lead.id, 'Contacted'); }}
                   className="bg-background hover:bg-primary/20 border border-border hover:border-primary text-xs font-semibold py-1.5 rounded smooth-transition"
                 >
                   Mark Contacted
                 </button>
                 <button 
-                  onClick={() => updateLeadStage(lead.id, 'Qualified')}
+                  onClick={(e) => { e.stopPropagation(); updateLeadStage(lead.id, 'Qualified'); }}
                   className="bg-background hover:bg-green-500/20 border border-border hover:border-green-500 text-xs font-semibold py-1.5 rounded smooth-transition"
                 >
                   Qualified
                 </button>
                 <button 
-                  onClick={() => updateLeadStage(lead.id, 'Meeting Scheduled')}
+                  onClick={(e) => { e.stopPropagation(); updateLeadStage(lead.id, 'Meeting Scheduled'); }}
                   className="bg-background hover:bg-blue-500/20 border border-border hover:border-blue-500 text-xs font-semibold py-1.5 rounded smooth-transition col-span-2"
                 >
                   Meeting Scheduled
