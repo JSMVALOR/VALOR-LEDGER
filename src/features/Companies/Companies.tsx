@@ -1,233 +1,368 @@
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Search, Filter, Download, Building, MapPin, Globe, Phone, Mail, MoreHorizontal, ArrowUpDown, X } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { 
+  Building2, 
+  Search, 
+  Plus, 
+  MapPin, 
+  Globe, 
+  Phone, 
+  Mail, 
+  Users, 
+  ExternalLink, 
+  Download,
+  Filter,
+  X,
+  Briefcase
+} from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { useStore } from '../../lib/store';
-import type { Company } from '../../lib/store';
+import { useStore, type Company } from '../../lib/store';
 
 export function CompaniesPage() {
-  const { companies, addCompany } = useStore();
+  const { companies, addCompany, leads } = useStore();
+
   const [search, setSearch] = useState('');
-  const [sortConfig, setSortConfig] = useState<{ key: keyof Company; direction: 'asc' | 'desc' } | null>(null);
+  const [cityFilter, setCityFilter] = useState('All');
+  const [industryFilter, setIndustryFilter] = useState('All');
 
-  const [open, setOpen] = useState(false);
-  const [formData, setFormData] = useState({ name: '', industry: '', employees: '', website: '', city: '', phone: '', email: '', lastContact: '' });
+  // Modal State
+  const [openModal, setOpenModal] = useState(false);
+  const [newCompany, setNewCompany] = useState({
+    name: '',
+    industry: 'Legal Services',
+    employees: '10-50',
+    website: '',
+    city: 'Bangalore',
+    phone: '',
+    email: '',
+    lastContact: 'Today',
+  });
 
-  const handleAddCompany = (e: React.FormEvent) => {
-    e.preventDefault();
-    addCompany(formData);
-    setOpen(false);
-    setFormData({ name: '', industry: '', employees: '', website: '', city: '', phone: '', email: '', lastContact: '' });
-  };
+  const cities = useMemo(() => {
+    const set = new Set(companies.map(c => c.city).filter(Boolean));
+    return ['All', ...Array.from(set).sort()];
+  }, [companies]);
 
-  const requestSort = (key: keyof Company) => {
-    let direction: 'asc' | 'desc' = 'asc';
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
-    setSortConfig({ key, direction });
-  };
+  const industries = useMemo(() => {
+    const set = new Set(companies.map(c => c.industry).filter(Boolean));
+    return ['All', ...Array.from(set).sort()];
+  }, [companies]);
 
   const filteredCompanies = useMemo(() => {
-    return companies.filter(c => 
-      c.name.toLowerCase().includes(search.toLowerCase()) || 
-      c.industry.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [companies, search]);
+    return companies.filter(c => {
+      const matchesSearch = 
+        (c.name || '').toLowerCase().includes(search.toLowerCase()) ||
+        (c.industry || '').toLowerCase().includes(search.toLowerCase()) ||
+        (c.city || '').toLowerCase().includes(search.toLowerCase());
+      const matchesCity = cityFilter === 'All' || c.city === cityFilter;
+      const matchesIndustry = industryFilter === 'All' || c.industry === industryFilter;
+      return matchesSearch && matchesCity && matchesIndustry;
+    });
+  }, [companies, search, cityFilter, industryFilter]);
 
-  const sortedCompanies = useMemo(() => {
-    let sortable = [...filteredCompanies];
-    if (sortConfig !== null) {
-      sortable.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
-        if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === 'asc' ? 1 : -1;
-        return 0;
-      });
-    }
-    return sortable;
-  }, [filteredCompanies, sortConfig]);
+  const handleCreateCompany = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCompany.name) return;
+
+    addCompany(newCompany);
+    setOpenModal(false);
+    setNewCompany({
+      name: '',
+      industry: 'Legal Services',
+      employees: '10-50',
+      website: '',
+      city: 'Bangalore',
+      phone: '',
+      email: '',
+      lastContact: 'Today',
+    });
+  };
 
   return (
-    <div className="flex flex-col space-y-6 pb-20 md:pb-0 h-full">
-      <div className="flex justify-between items-center">
+    <div className="space-y-5 max-w-7xl mx-auto w-full pb-20 md:pb-6">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Companies</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Manage organizations, contacts, and related opportunities.</p>
+          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
+            Target Companies
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200">
+              {filteredCompanies.length}
+            </span>
+          </h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Key enterprise accounts, legal firms, clinics, and target organizations.
+          </p>
         </div>
-        
-        <Dialog.Root open={open} onOpenChange={setOpen}>
-          <Dialog.Trigger asChild>
-            <button className="flex items-center gap-2 px-4 py-2 bg-primary text-black rounded-lg text-sm font-semibold hover:bg-primary/90 smooth-transition shadow-lg shadow-primary/20">
-              <Plus className="w-4 h-4" />
-              Add Company
-            </button>
-          </Dialog.Trigger>
-          <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 bg-background/90 z-50 backdrop-blur-sm" />
-            <Dialog.Content className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-border bg-surface p-6 shadow-2xl rounded-2xl">
-              <div className="flex flex-col space-y-2 mb-2">
-                <Dialog.Title className="text-xl font-bold tracking-tight text-foreground">New Company</Dialog.Title>
-                <Dialog.Description className="text-sm text-muted-foreground">
-                  Enter the details of the new company.
-                </Dialog.Description>
-              </div>
-              <form onSubmit={handleAddCompany} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">Company Name</label>
-                    <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary transition-colors" placeholder="Acme Corp" />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">Industry</label>
-                    <input required value={formData.industry} onChange={e => setFormData({...formData, industry: e.target.value})} className="flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary transition-colors" placeholder="Technology" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">Employees</label>
-                    <input required value={formData.employees} onChange={e => setFormData({...formData, employees: e.target.value})} className="flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary transition-colors" placeholder="50-100" />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">Website</label>
-                    <input required value={formData.website} onChange={e => setFormData({...formData, website: e.target.value})} className="flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary transition-colors" placeholder="acme.com" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">Phone</label>
-                    <input required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary transition-colors" placeholder="+1 234 567 890" />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">Email</label>
-                    <input type="email" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary transition-colors" placeholder="contact@acme.com" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">City</label>
-                    <input required value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className="flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary transition-colors" placeholder="New York" />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">Owner</label>
-                  </div>
-                </div>
-                <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-border">
-                  <Dialog.Close asChild>
-                    <button type="button" className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-background border border-border smooth-transition">Cancel</button>
-                  </Dialog.Close>
-                  <button type="submit" className="px-4 py-2 bg-primary text-black rounded-lg text-sm font-semibold hover:bg-primary/90 smooth-transition">Save Company</button>
-                </div>
-              </form>
-              <Dialog.Close asChild>
-                <button className="absolute right-4 top-4 opacity-50 hover:opacity-100 transition-opacity">
-                  <X className="h-5 w-5" />
-                </button>
-              </Dialog.Close>
-            </Dialog.Content>
-          </Dialog.Portal>
-        </Dialog.Root>
+
+        <button
+          onClick={() => setOpenModal(true)}
+          className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 self-start sm:self-auto shadow-sm shadow-blue-500/20 transition-all"
+        >
+          <Plus className="w-4 h-4" /> Add Company
+        </button>
       </div>
 
-      <div className="flex items-center justify-between gap-4 glass-panel p-2 rounded-xl">
-        <div className="flex-1 max-w-md relative">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input 
-            type="text" 
-            placeholder="Search companies by name or industry..." 
+      {/* Filter Bar */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <div className="relative">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search organizations..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-background border border-border rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary smooth-transition"
+            className="w-full pl-9 pr-3 py-2 bg-surface border border-border rounded-xl text-xs focus:outline-none focus:border-blue-500 font-medium"
           />
         </div>
-        <div className="flex items-center gap-2">
-          <button className="flex items-center gap-2 px-3 py-2 bg-background border border-border rounded-lg text-sm font-medium hover:bg-surface smooth-transition">
-            <Filter className="w-4 h-4" /> Filters
-          </button>
-          <button className="flex items-center gap-2 px-3 py-2 bg-background border border-border rounded-lg text-sm font-medium hover:bg-surface smooth-transition">
-            <Download className="w-4 h-4" /> Export
-          </button>
+
+        <select
+          value={cityFilter}
+          onChange={(e) => setCityFilter(e.target.value)}
+          className="px-3 py-2 bg-surface border border-border rounded-xl text-xs font-medium focus:outline-none focus:border-blue-500"
+        >
+          {cities.map(c => (
+            <option key={c} value={c}>{c === 'All' ? 'All Locations' : c}</option>
+          ))}
+        </select>
+
+        <select
+          value={industryFilter}
+          onChange={(e) => setIndustryFilter(e.target.value)}
+          className="px-3 py-2 bg-surface border border-border rounded-xl text-xs font-medium focus:outline-none focus:border-blue-500"
+        >
+          {industries.map(i => (
+            <option key={i} value={i}>{i === 'All' ? 'All Industries' : i}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* MOBILE VIEW: Ultra-Clean Account Cards */}
+      <div className="block md:hidden space-y-3">
+        {filteredCompanies.map(c => {
+          const associatedLeads = leads.filter(l => l.company.toLowerCase().includes(c.name.toLowerCase()));
+
+          return (
+            <div key={c.id} className="p-4 bg-surface/80 border border-border rounded-2xl space-y-3 shadow-sm">
+              <div className="flex justify-between items-start">
+                <div className="min-w-0 flex-1 pr-2">
+                  <h3 className="text-base font-bold text-foreground leading-snug truncate">
+                    {c.name}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {c.industry} • {c.city}
+                  </p>
+                </div>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                  {c.employees || '10-50'} staff
+                </span>
+              </div>
+
+              <div className="flex flex-wrap gap-2 text-xs pt-1 border-t border-border/60">
+                {c.phone && (
+                  <a href={`tel:${c.phone}`} className="flex items-center gap-1 text-blue-600 font-semibold">
+                    <Phone className="w-3 h-3" /> {c.phone}
+                  </a>
+                )}
+                {c.website && (
+                  <a href={c.website.startsWith('http') ? c.website : `https://${c.website}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-muted-foreground hover:text-foreground">
+                    <Globe className="w-3 h-3" /> Website
+                  </a>
+                )}
+              </div>
+
+              <div className="text-[11px] text-muted-foreground pt-1 flex justify-between">
+                <span>Associated Deals: <b className="text-foreground">{associatedLeads.length}</b></span>
+                <span>Active</span>
+              </div>
+            </div>
+          );
+        })}
+
+        {filteredCompanies.length === 0 && (
+          <div className="py-16 text-center text-xs text-muted-foreground">
+            No target companies found matching your query.
+          </div>
+        )}
+      </div>
+
+      {/* DESKTOP VIEW: High-Information Grid / Table */}
+      <div className="hidden md:block">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredCompanies.map(c => {
+            const cleanPhone = (c.phone || '').split('/')[0].replace(/[^0-9+]/g, '');
+            const associatedLeads = leads.filter(l => l.company.toLowerCase().includes(c.name.toLowerCase()));
+
+            return (
+              <div 
+                key={c.id}
+                className="bg-surface/70 border border-border hover:border-blue-400 p-5 rounded-2xl flex flex-col justify-between space-y-4 shadow-sm transition-all"
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center font-bold text-sm">
+                        <Building2 className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-foreground text-base leading-snug">{c.name}</h3>
+                        <p className="text-xs text-muted-foreground">{c.industry}</p>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-background border border-border text-muted-foreground">
+                      {c.employees || '10-50'}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 space-y-1.5 text-xs">
+                    {c.city && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                        <span>{c.city}</span>
+                      </div>
+                    )}
+                    {c.website && (
+                      <a 
+                        href={c.website.startsWith('http') ? c.website : `https://${c.website}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-2 text-blue-600 hover:underline truncate"
+                      >
+                        <Globe className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{c.website}</span>
+                      </a>
+                    )}
+                    {c.email && (
+                      <a href={`mailto:${c.email}`} className="flex items-center gap-2 text-muted-foreground hover:text-foreground truncate">
+                        <Mail className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{c.email}</span>
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-border flex items-center justify-between text-xs">
+                  {c.phone ? (
+                    <a
+                      href={`tel:${cleanPhone}`}
+                      className="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs flex items-center gap-1.5 transition-colors"
+                    >
+                      <Phone className="w-3 h-3" /> Call
+                    </a>
+                  ) : (
+                    <span className="text-muted-foreground">No Phone</span>
+                  )}
+
+                  <span className="text-[11px] font-semibold text-muted-foreground">
+                    {associatedLeads.length} Linked Pipeline Deals
+                  </span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 border border-border rounded-xl bg-surface/30 overflow-hidden flex flex-col shadow-sm">
-        <div className="overflow-auto flex-1">
-          <table className="w-full text-sm text-left whitespace-nowrap">
-            <thead className="bg-surface/80 sticky top-0 z-10 border-b border-border shadow-sm backdrop-blur-md">
-              <tr>
-                {['name', 'industry', 'contact', 'location', 'lastContact'].map((key) => (
-                  <th 
-                    key={key}
-                    onClick={() => key !== 'contact' && key !== 'location' ? requestSort(key as keyof Company) : null}
-                    className={`px-6 py-4 font-medium text-muted-foreground ${key !== 'contact' && key !== 'location' ? 'cursor-pointer hover:text-foreground transition-colors group' : ''}`}
-                  >
-                    <div className="flex items-center gap-2 capitalize">
-                      {key.replace(/([A-Z])/g, ' $1').trim()}
-                      {key !== 'contact' && key !== 'location' && <ArrowUpDown className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />}
-                    </div>
-                  </th>
-                ))}
-                <th className="px-6 py-4"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              <AnimatePresence>
-                {sortedCompanies.map((company) => (
-                  <motion.tr 
-                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    key={company.id} 
-                    className="hover:bg-surface/50 transition-colors group cursor-pointer"
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-background border border-border flex items-center justify-center text-primary shadow-inner">
-                          <Building className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <div className="font-semibold text-foreground text-base">{company.name}</div>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                            <a href={`https://${company.website}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:text-primary transition-colors">
-                              <Globe className="w-3 h-3" /> {company.website}
-                            </a>
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-foreground">{company.industry}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">{company.employees} employees</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col gap-1.5">
-                        <div className="flex items-center gap-2 text-sm text-foreground">
-                          <Phone className="w-3.5 h-3.5 text-muted-foreground" /> {company.phone}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Mail className="w-3.5 h-3.5" /> {company.email}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-sm text-foreground">
-                        <MapPin className="w-4 h-4 text-primary" /> {company.city}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-foreground">{company.lastContact}</div>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-background opacity-0 group-hover:opacity-100 smooth-transition">
-                        <MoreHorizontal className="w-5 h-5" />
-                      </button>
-                    </td>
-                  </motion.tr>
-                ))}
-              </AnimatePresence>
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {/* Add Company Radix Modal Dialog */}
+      <Dialog.Root open={openModal} onOpenChange={setOpenModal}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 animate-fade-in" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background border border-border p-6 rounded-2xl max-w-md w-[92vw] z-50 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <Dialog.Title className="text-lg font-bold text-foreground">
+                Add Target Organization
+              </Dialog.Title>
+              <Dialog.Close asChild>
+                <button className="p-1 rounded-lg hover:bg-surface text-muted-foreground">
+                  <X className="w-4 h-4" />
+                </button>
+              </Dialog.Close>
+            </div>
+
+            <form onSubmit={handleCreateCompany} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-[11px] font-bold text-muted-foreground uppercase mb-1">Company Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Apollo Healthcare Partners"
+                  value={newCompany.name}
+                  onChange={(e) => setNewCompany({ ...newCompany, name: e.target.value })}
+                  className="w-full px-3 py-2 bg-surface border border-border rounded-xl focus:outline-none focus:border-blue-500 font-semibold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-bold text-muted-foreground uppercase mb-1">Industry</label>
+                  <input
+                    type="text"
+                    placeholder="Healthcare, Legal..."
+                    value={newCompany.industry}
+                    onChange={(e) => setNewCompany({ ...newCompany, industry: e.target.value })}
+                    className="w-full px-3 py-2 bg-surface border border-border rounded-xl focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-muted-foreground uppercase mb-1">Employee Count</label>
+                  <input
+                    type="text"
+                    placeholder="10-50"
+                    value={newCompany.employees}
+                    onChange={(e) => setNewCompany({ ...newCompany, employees: e.target.value })}
+                    className="w-full px-3 py-2 bg-surface border border-border rounded-xl focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-bold text-muted-foreground uppercase mb-1">Headquarters City</label>
+                  <input
+                    type="text"
+                    placeholder="Mumbai, Bangalore..."
+                    value={newCompany.city}
+                    onChange={(e) => setNewCompany({ ...newCompany, city: e.target.value })}
+                    className="w-full px-3 py-2 bg-surface border border-border rounded-xl focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-muted-foreground uppercase mb-1">Direct Phone</label>
+                  <input
+                    type="text"
+                    placeholder="+91..."
+                    value={newCompany.phone}
+                    onChange={(e) => setNewCompany({ ...newCompany, phone: e.target.value })}
+                    className="w-full px-3 py-2 bg-surface border border-border rounded-xl focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-muted-foreground uppercase mb-1">Website URL</label>
+                <input
+                  type="text"
+                  placeholder="https://..."
+                  value={newCompany.website}
+                  onChange={(e) => setNewCompany({ ...newCompany, website: e.target.value })}
+                  className="w-full px-3 py-2 bg-surface border border-border rounded-xl focus:outline-none"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <Dialog.Close asChild>
+                  <button type="button" className="px-4 py-2 rounded-xl border border-border font-semibold hover:bg-surface text-muted-foreground">
+                    Cancel
+                  </button>
+                </Dialog.Close>
+                <button type="submit" className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm">
+                  Save Organization
+                </button>
+              </div>
+            </form>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </div>
   );
 }
+export default CompaniesPage;
