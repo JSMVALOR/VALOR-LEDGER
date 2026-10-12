@@ -1,12 +1,29 @@
 import { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Home, Users, Briefcase, Calendar, CheckSquare, Settings, Plus, Phone, CheckCircle2, Mail, Globe, MapPin, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
+import { 
+  Home, 
+  Users, 
+  Briefcase, 
+  Calendar, 
+  CheckSquare, 
+  Settings, 
+  Plus, 
+  Phone, 
+  CheckCircle2, 
+  Mail, 
+  Globe, 
+  MapPin, 
+  ChevronLeft, 
+  ChevronRight, 
+  AlertCircle,
+  X
+} from 'lucide-react';
 
 import ValorLogo from '../components/shared/ValorLogo';
 import { useStore, type SelectedItem } from '../lib/store';
 
-function RightSidebarDetails({ item }: { item: SelectedItem }) {
-  const { leads, incompleteLeads, updateLeadStage } = useStore();
+function RightSidebarDetails({ item, onClose }: { item: SelectedItem; onClose?: () => void }) {
+  const { leads, incompleteLeads, updateLeadStage, assignLead } = useStore();
 
   if (!item) return null;
 
@@ -15,126 +32,131 @@ function RightSidebarDetails({ item }: { item: SelectedItem }) {
     if (!lead) return <div className="text-sm text-muted-foreground text-center mt-10">Lead not found</div>;
 
     const stageColors: Record<string, string> = {
-      'New': 'bg-primary/10 text-primary border-primary/20',
-      'Contacted': 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-      'Qualified': 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-      'Meeting Scheduled': 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-      'Proposal Sent': 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-      'Negotiation': 'bg-pink-500/10 text-pink-400 border-pink-500/20',
-      'Won': 'bg-green-500/10 text-green-400 border-green-500/20',
-      'Lost': 'bg-red-500/10 text-red-400 border-red-500/20',
+      'New': 'bg-blue-50 text-blue-700 border-blue-200',
+      'Contacted': 'bg-indigo-50 text-indigo-700 border-indigo-200',
+      'Qualified': 'bg-purple-50 text-purple-700 border-purple-200',
+      'Meeting Scheduled': 'bg-amber-50 text-amber-700 border-amber-200',
+      'Proposal Sent': 'bg-orange-50 text-orange-700 border-orange-200',
+      'Negotiation': 'bg-pink-50 text-pink-700 border-pink-200',
+      'Won': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      'Lost': 'bg-rose-50 text-rose-700 border-rose-200',
     };
+
+    const cleanPhone = (lead.phone || '').split('/')[0].replace(/[^0-9+]/g, '');
 
     return (
       <div className="flex flex-col space-y-6">
-        <div>
-          <h2 className="text-xl font-bold text-foreground">{lead.company}</h2>
-          <p className="text-sm text-muted-foreground mt-1">{lead.contactPerson}</p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-foreground leading-snug">{lead.company}</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">{lead.contactPerson || 'Decision Maker'}</p>
+          </div>
+          {onClose && (
+            <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:bg-surface border border-border">
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         <div className="space-y-4">
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Status</span>
+            <span className="text-[11px] text-muted-foreground uppercase tracking-wider font-bold">Deal Stage</span>
             <select 
               value={lead.stage}
               onChange={(e) => updateLeadStage(lead.id, e.target.value as any)}
-              className={`text-sm font-semibold px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer ${stageColors[lead.stage] || 'bg-surface text-foreground'}`}
+              className={`text-xs font-bold px-3 py-2 rounded-xl border focus:outline-none appearance-none cursor-pointer ${stageColors[lead.stage] || 'bg-surface text-foreground'}`}
             >
               {Object.keys(stageColors).map(stage => (
-                <option key={stage} value={stage} className="bg-surface text-foreground">{stage}</option>
+                <option key={stage} value={stage}>{stage}</option>
               ))}
             </select>
           </div>
 
-          <div className="grid gap-3 pt-4 border-t border-border">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] text-muted-foreground uppercase tracking-wider font-bold">Assigned Rep</span>
+            <select 
+              value={lead.assignedTo || 'swaroop'}
+              onChange={(e) => assignLead(lead.id, e.target.value)}
+              className="text-xs font-semibold px-3 py-2 rounded-xl border border-border bg-background text-foreground"
+            >
+              <option value="swaroop">Swaroop (Sales Lead)</option>
+              <option value="vijay">Vijay (Outreach Exec)</option>
+              <option value="nithish">Nithish (Deal Closer)</option>
+            </select>
+          </div>
+
+          <div className="grid gap-2.5 pt-4 border-t border-border">
             {lead.phone && lead.phone !== 'N/A' && (
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <Phone className="w-4 h-4 text-primary" />
-                </div>
-                <div className="overflow-hidden">
-                  <p className="text-xs text-muted-foreground">Phone</p>
-                  <a href={`tel:${lead.phone.split('/')[0].replace(/[^0-9+]/g, '')}`} className="text-sm font-medium hover:text-primary transition-colors block truncate">{lead.phone}</a>
-                </div>
-              </div>
+              <a 
+                href={`tel:${cleanPhone}`}
+                className="flex items-center gap-2.5 p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold hover:bg-blue-100 transition-colors"
+              >
+                <Phone className="w-4 h-4 shrink-0" />
+                <span className="truncate">{lead.phone}</span>
+              </a>
             )}
 
             {lead.email && (
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <Mail className="w-4 h-4 text-primary" />
-                </div>
-                <div className="overflow-hidden">
-                  <p className="text-xs text-muted-foreground">Email</p>
-                  <a href={`mailto:${lead.email}`} className="text-sm font-medium hover:text-primary transition-colors block truncate">{lead.email}</a>
-                </div>
-              </div>
+              <a 
+                href={`mailto:${lead.email}`}
+                className="flex items-center gap-2.5 p-2.5 rounded-xl bg-surface border border-border text-foreground text-xs hover:border-blue-300 transition-colors"
+              >
+                <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
+                <span className="truncate">{lead.email}</span>
+              </a>
             )}
 
             {lead.website && (
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <Globe className="w-4 h-4 text-primary" />
-                </div>
-                <div className="overflow-hidden">
-                  <p className="text-xs text-muted-foreground">Website</p>
-                  <a href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`} target="_blank" rel="noreferrer" className="text-sm font-medium hover:text-primary transition-colors block truncate">{lead.website.replace(/^https?:\/\//, '')}</a>
-                </div>
-              </div>
+              <a 
+                href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2.5 p-2.5 rounded-xl bg-surface border border-border text-foreground text-xs hover:border-blue-300 transition-colors"
+              >
+                <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
+                <span className="truncate">{lead.website}</span>
+              </a>
             )}
 
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <MapPin className="w-4 h-4 text-primary" />
+            {lead.city && (
+              <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-surface border border-border text-xs text-muted-foreground">
+                <MapPin className="w-4 h-4 shrink-0" />
+                <span>{lead.city}</span>
               </div>
-              <div className="overflow-hidden">
-                <p className="text-xs text-muted-foreground">City</p>
-                <p className="text-sm font-medium truncate">{lead.city}</p>
-              </div>
-            </div>
+            )}
           </div>
-          
-          <div className="pt-4 border-t border-border grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Industry</p>
-              <div className="inline-block px-2 py-1 bg-surface border border-border rounded text-xs font-medium">
-                {lead.industry}
-              </div>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Priority</p>
-              <div className="inline-block px-2 py-1 bg-surface border border-border rounded text-xs font-medium">
-                {lead.priority}
-              </div>
-            </div>
+
+          <div className="pt-4 border-t border-border">
+            <span className="text-[11px] text-muted-foreground uppercase tracking-wider font-bold block mb-1">Contract Target</span>
+            <p className="text-lg font-bold text-foreground">₹{(lead.value || 10000).toLocaleString('en-IN')}</p>
           </div>
         </div>
       </div>
     );
   }
 
-  return <div className="text-sm text-muted-foreground text-center mt-10">Details not available</div>;
+  return null;
 }
 
 export default function AppLayout() {
-  const location = useLocation();
-  const { selectedItem, currentUser, logout } = useStore();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const { selectedItem, setSelectedItem, currentUser, logout } = useStore();
+  const location = useLocation();
 
-  const NavItem = ({ to, icon: Icon, label }: { to: string, icon: any, label: string }) => {
+  const NavItem = ({ to, icon: Icon, label }: { to: string; icon: any; label: string }) => {
     const isActive = location.pathname === to;
     return (
-      <Link 
-        to={to} 
+      <Link
+        to={to}
+        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+          isActive 
+            ? 'bg-blue-600 text-white shadow-sm' 
+            : 'text-muted-foreground hover:text-foreground hover:bg-surface'
+        }`}
         title={isSidebarCollapsed ? label : undefined}
-        className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'gap-3 px-4'} py-2.5 rounded-lg transition-all text-sm font-medium relative group
-          ${isActive 
-            ? 'bg-primary/10 text-primary' 
-            : 'text-muted-foreground hover:bg-surface hover:text-foreground'
-          }`}
       >
-        <Icon className="w-[18px] h-[18px] shrink-0" />
-        {!isSidebarCollapsed && <span className="truncate">{label}</span>}
+        <Icon className="w-4 h-4 shrink-0" />
+        {!isSidebarCollapsed && <span>{label}</span>}
       </Link>
     );
   };
@@ -142,23 +164,23 @@ export default function AppLayout() {
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden font-sans relative">
       {/* Background Watermark */}
-      <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-[0.03] z-0">
+      <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-[0.02] z-0">
         <ValorLogo className="scale-[5]" />
       </div>
 
-      {/* Left Sidebar */}
-      <aside className={`hidden md:flex flex-col transition-all duration-300 border-r border-border bg-background/80 backdrop-blur-md p-4 relative z-20 ${isSidebarCollapsed ? 'w-[72px]' : 'w-64'}`}>
-        <div className={`mb-8 flex items-center h-10 ${isSidebarCollapsed ? 'justify-center' : 'justify-between px-2'}`}>
+      {/* Left Sidebar (Desktop) */}
+      <aside className={`hidden md:flex flex-col transition-all duration-300 border-r border-border bg-background/90 backdrop-blur-md p-4 relative z-20 ${isSidebarCollapsed ? 'w-[72px]' : 'w-60'}`}>
+        <div className={`mb-6 flex items-center h-10 ${isSidebarCollapsed ? 'justify-center' : 'justify-between px-1'}`}>
           {!isSidebarCollapsed ? (
             <ValorLogo className="scale-90 origin-left transition-all" />
           ) : (
-            <span className="text-primary font-serif italic tracking-tight font-bold text-xl">JSM</span>
+            <span className="text-blue-600 font-bold text-lg">VL</span>
           )}
           <button 
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            className={`w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-surface rounded-lg transition-all ${isSidebarCollapsed ? 'hidden' : 'flex'}`}
+            className={`w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-surface rounded-lg transition-all ${isSidebarCollapsed ? 'hidden' : 'flex'}`}
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-4 h-4" />
           </button>
         </div>
         
@@ -167,85 +189,125 @@ export default function AppLayout() {
             onClick={() => setIsSidebarCollapsed(false)}
             className="w-full flex items-center justify-center mb-6 text-muted-foreground hover:text-foreground transition-all"
           >
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRight className="w-4 h-4" />
           </button>
         )}
         
-        <nav className="flex-1 flex flex-col gap-1 overflow-y-auto overflow-x-hidden no-scrollbar">
+        <nav className="flex-1 flex flex-col gap-1 overflow-y-auto no-scrollbar">
           <NavItem to="/" icon={Home} label="Dashboard" />
-          <NavItem to="/leads" icon={Users} label="Leads" />
-          <NavItem to="/incomplete-leads" icon={AlertCircle} label="Incomplete" />
+          <NavItem to="/leads" icon={Users} label="Pipeline" />
+          <NavItem to="/easy-contact" icon={Phone} label="Speed Dial" />
+          <NavItem to="/incomplete-leads" icon={AlertCircle} label="Unverified" />
           <NavItem to="/companies" icon={Briefcase} label="Companies" />
-          <NavItem to="/easy-contact" icon={Phone} label="Easy Contact" />
-          <NavItem to="/processed-leads" icon={CheckCircle2} label="Processed" />
           <NavItem to="/calendar" icon={Calendar} label="Calendar" />
           <NavItem to="/tasks" icon={CheckSquare} label="Tasks" />
         </nav>
 
-        <div className="pt-4 border-t border-border mt-auto">
+        <div className="pt-3 border-t border-border mt-auto">
           <NavItem to="/settings" icon={Settings} label="Settings" />
         </div>
       </aside>
 
       {/* Main Workspace */}
       <main className="flex-1 flex flex-col overflow-hidden bg-background relative">
-        {/* Topbar for mobile, or breadcrumbs/search for desktop */}
-        <header className="h-16 border-b border-border flex items-center justify-between px-6 bg-background/80 backdrop-blur-md z-10 hidden md:flex">
-          <div className="text-sm text-muted-foreground flex items-center gap-2">
-            <span className="font-semibold text-foreground">Workspace</span>
+        {/* Desktop Topbar */}
+        <header className="h-14 border-b border-border flex items-center justify-between px-6 bg-background/80 backdrop-blur-md z-10 hidden md:flex">
+          <div className="text-xs text-muted-foreground flex items-center gap-2">
+            <span className="font-semibold text-foreground">VALOR CRM</span>
             <span>/</span>
-            <span>{location.pathname === '/' ? 'Dashboard' : location.pathname.substring(1).replace('-', ' ')}</span>
+            <span className="capitalize">{location.pathname === '/' ? 'Command Center' : location.pathname.substring(1).replace('-', ' ')}</span>
           </div>
-          <div className="flex items-center gap-4">
-            <Link to="/leads" className="bg-primary text-black px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 hover:bg-primary/90 smooth-transition">
-              <Plus className="w-4 h-4" /> New Lead
+          <div className="flex items-center gap-3">
+            <Link to="/leads" className="bg-blue-600 text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 hover:bg-blue-700 shadow-sm transition-all">
+              <Plus className="w-3.5 h-3.5" /> Add Lead
             </Link>
-            <div className="flex items-center gap-3 pl-4 border-l border-border">
+            <div className="flex items-center gap-2.5 pl-3 border-l border-border">
               <div className="flex flex-col items-end">
-                <span className="text-sm font-bold capitalize">{currentUser}</span>
-                <button onClick={logout} className="text-[10px] text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest font-semibold">
+                <span className="text-xs font-bold capitalize text-foreground">{currentUser || 'Team User'}</span>
+                <button onClick={logout} className="text-[10px] text-muted-foreground hover:text-rose-600 font-semibold uppercase tracking-wider">
                   Logout
                 </button>
               </div>
-              <div className="w-9 h-9 rounded-full bg-primary/20 text-primary border border-primary/30 flex items-center justify-center">
-                <span className="text-sm font-bold">{currentUser?.substring(0,2).toUpperCase()}</span>
+              <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-center font-bold text-xs">
+                {(currentUser || 'V').substring(0, 2).toUpperCase()}
               </div>
             </div>
           </div>
         </header>
-        <div className="flex-1 overflow-auto p-6">
+
+        {/* Page Content Scroll Area */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-24 md:pb-6">
           <Outlet />
         </div>
       </main>
       
-      {/* Right Context Panel */}
-      <aside className="hidden lg:block w-80 border-l border-border bg-surface/30 p-6 overflow-auto">
-         {selectedItem ? (
-           <RightSidebarDetails item={selectedItem} />
-         ) : (
-           <div className="text-sm text-muted-foreground text-center mt-10">Select an item to view details</div>
-         )}
+      {/* Right Drawer (Desktop) */}
+      <aside className="hidden lg:block w-80 border-l border-border bg-surface/40 p-5 overflow-auto">
+        {selectedItem ? (
+          <RightSidebarDetails item={selectedItem} onClose={() => setSelectedItem(null)} />
+        ) : (
+          <div className="text-xs text-muted-foreground text-center mt-12 space-y-1">
+            <p className="font-semibold text-foreground">Quick Inspector</p>
+            <p>Select any business in your pipeline to view direct dials & rep notes.</p>
+          </div>
+        )}
       </aside>
 
-      {/* Mobile Nav */}
-      <nav className="md:hidden fixed bottom-0 w-full bg-surface/90 backdrop-blur-md border-t border-border flex justify-around p-3 z-50 pb-safe">
-        <Link to="/" className={`flex flex-col items-center gap-1 ${location.pathname === '/' ? 'text-primary' : 'text-muted-foreground'}`}>
-          <Home className="w-6 h-6" />
+      {/* Mobile Drawer (Bottom Sheet when item selected) */}
+      {selectedItem && (
+        <div className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end bg-black/40 backdrop-blur-sm animate-fade-in">
+          <div className="bg-background border-t border-border rounded-t-3xl p-6 max-h-[80vh] overflow-y-auto shadow-2xl space-y-4">
+            <RightSidebarDetails item={selectedItem} onClose={() => setSelectedItem(null)} />
+          </div>
+        </div>
+      )}
+
+      {/* Native Mobile Bottom Nav Bar */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-border flex justify-around items-center px-2 py-2 z-40 pb-safe">
+        <Link 
+          to="/" 
+          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-colors ${
+            location.pathname === '/' ? 'text-blue-600 font-bold' : 'text-muted-foreground'
+          }`}
+        >
+          <Home className="w-5 h-5" />
+          <span className="text-[10px]">Home</span>
         </Link>
-        <Link to="/leads" className={`flex flex-col items-center gap-1 ${location.pathname === '/leads' ? 'text-primary' : 'text-muted-foreground'}`}>
-          <Users className="w-6 h-6" />
+        <Link 
+          to="/leads" 
+          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-colors ${
+            location.pathname === '/leads' ? 'text-blue-600 font-bold' : 'text-muted-foreground'
+          }`}
+        >
+          <Users className="w-5 h-5" />
+          <span className="text-[10px]">Pipeline</span>
         </Link>
         
-        {/* Floating Action Button (Center) */}
-        <Link to="/leads" className="relative -top-5 bg-primary text-black p-3 rounded-full shadow-lg shadow-primary/20 flex items-center justify-center transform transition-transform hover:scale-105 active:scale-95">
-          <Plus className="w-6 h-6" />
+        {/* Floating Call Center Action */}
+        <Link 
+          to="/easy-contact" 
+          className="relative -top-3 bg-blue-600 text-white p-3 rounded-2xl shadow-lg shadow-blue-500/30 flex items-center justify-center transform active:scale-95 transition-all"
+        >
+          <Phone className="w-5 h-5" />
         </Link>
 
-        <Link to="/tasks" className={`flex flex-col items-center gap-1 ${location.pathname === '/tasks' ? 'text-primary' : 'text-muted-foreground'}`}>
-          <CheckSquare className="w-6 h-6" />
+        <Link 
+          to="/tasks" 
+          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-colors ${
+            location.pathname === '/tasks' ? 'text-blue-600 font-bold' : 'text-muted-foreground'
+          }`}
+        >
+          <CheckSquare className="w-5 h-5" />
+          <span className="text-[10px]">Tasks</span>
         </Link>
-        <Link to="/settings" className={`flex flex-col items-center gap-1 ${location.pathname === '/settings' ? 'text-primary' : 'text-muted-foreground'}`}>
-           <div className="w-6 h-6 rounded-full bg-border"></div>
+        <Link 
+          to="/settings" 
+          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-colors ${
+            location.pathname === '/settings' ? 'text-blue-600 font-bold' : 'text-muted-foreground'
+          }`}
+        >
+          <Settings className="w-5 h-5" />
+          <span className="text-[10px]">Settings</span>
         </Link>
       </nav>
     </div>
