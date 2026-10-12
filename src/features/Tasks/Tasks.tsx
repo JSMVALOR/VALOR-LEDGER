@@ -31,7 +31,7 @@ export function Tasks() {
     title: '',
     due: 'Today, 5:00 PM',
     priority: 'High' as Priority,
-    assignedTo: currentUser || 'swaroop',
+    assignedTo: currentUser?.username || 'swaroop',
   });
 
   const filteredTasks = useMemo(() => {
@@ -64,7 +64,7 @@ export function Tasks() {
       title: '',
       due: 'Today, 5:00 PM',
       priority: 'High',
-      assignedTo: currentUser || 'swaroop',
+      assignedTo: currentUser?.username || 'swaroop',
     });
   };
 

@@ -48,7 +48,7 @@ export function OverviewTab() {
     value: val,
   }));
 
-  const userDisplayName = currentUser ? currentUser.charAt(0).toUpperCase() + currentUser.slice(1) : 'Sales Team';
+  const userDisplayName = currentUser ? (currentUser.name || currentUser.username) : 'Sales Team';
 
   return (
     <div className="space-y-6">

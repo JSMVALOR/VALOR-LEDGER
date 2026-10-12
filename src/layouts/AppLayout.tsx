@@ -262,13 +262,13 @@ export default function AppLayout() {
             </Link>
             <div className="flex items-center gap-2.5 pl-3 border-l border-border">
               <div className="flex flex-col items-end">
-                <span className="text-xs font-bold capitalize text-foreground">{currentUser || 'Team User'}</span>
+                <span className="text-xs font-bold capitalize text-foreground">{(currentUser?.name || currentUser?.username || 'Team User')}</span>
                 <button onClick={logout} className="text-[10px] text-muted-foreground hover:text-rose-600 font-semibold uppercase tracking-wider">
                   Logout
                 </button>
               </div>
               <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-center font-bold text-xs">
-                {(currentUser || 'V').substring(0, 2).toUpperCase()}
+                {((currentUser?.name || currentUser?.username || 'V').substring(0, 2)).toUpperCase()}
               </div>
             </div>
           </div>
