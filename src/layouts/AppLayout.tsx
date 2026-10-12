@@ -16,7 +16,9 @@ import {
   ChevronLeft, 
   ChevronRight, 
   AlertCircle,
-  X
+  X,
+  Layers,
+  Sparkles
 } from 'lucide-react';
 
 import ValorLogo from '../components/shared/ValorLogo';
@@ -140,23 +142,32 @@ function RightSidebarDetails({ item, onClose }: { item: SelectedItem; onClose?: 
 
 export default function AppLayout() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const { selectedItem, setSelectedItem, currentUser, logout } = useStore();
+  const { selectedItem, setSelectedItem, currentUser, logout, leads, incompleteLeads, tasks } = useStore();
   const location = useLocation();
 
-  const NavItem = ({ to, icon: Icon, label }: { to: string; icon: any; label: string }) => {
+  const NavItem = ({ to, icon: Icon, label, badge }: { to: string; icon: any; label: string; badge?: number | string }) => {
     const isActive = location.pathname === to;
     return (
       <Link
         to={to}
-        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+        className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
           isActive 
-            ? 'bg-blue-600 text-white shadow-sm' 
+            ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20' 
             : 'text-muted-foreground hover:text-foreground hover:bg-surface'
         }`}
         title={isSidebarCollapsed ? label : undefined}
       >
-        <Icon className="w-4 h-4 shrink-0" />
-        {!isSidebarCollapsed && <span>{label}</span>}
+        <div className="flex items-center gap-3">
+          <Icon className="w-4 h-4 shrink-0" />
+          {!isSidebarCollapsed && <span>{label}</span>}
+        </div>
+        {!isSidebarCollapsed && badge !== undefined && (
+          <span className={`px-1.5 py-0.2 rounded-md text-[10px] font-bold ${
+            isActive ? 'bg-white/20 text-white' : 'bg-background border border-border text-muted-foreground'
+          }`}>
+            {badge}
+          </span>
+        )}
       </Link>
     );
   };
@@ -169,7 +180,7 @@ export default function AppLayout() {
       </div>
 
       {/* Left Sidebar (Desktop) */}
-      <aside className={`hidden md:flex flex-col transition-all duration-300 border-r border-border bg-background/90 backdrop-blur-md p-4 relative z-20 ${isSidebarCollapsed ? 'w-[72px]' : 'w-60'}`}>
+      <aside className={`hidden md:flex flex-col transition-all duration-300 border-r border-border bg-background/95 backdrop-blur-md p-4 relative z-20 ${isSidebarCollapsed ? 'w-[72px]' : 'w-64'}`}>
         <div className={`mb-6 flex items-center h-10 ${isSidebarCollapsed ? 'justify-center' : 'justify-between px-1'}`}>
           {!isSidebarCollapsed ? (
             <ValorLogo className="scale-90 origin-left transition-all" />
@@ -193,18 +204,46 @@ export default function AppLayout() {
           </button>
         )}
         
-        <nav className="flex-1 flex flex-col gap-1 overflow-y-auto no-scrollbar">
-          <NavItem to="/" icon={Home} label="Dashboard" />
-          <NavItem to="/leads" icon={Users} label="Pipeline" />
-          <NavItem to="/easy-contact" icon={Phone} label="Speed Dial" />
-          <NavItem to="/incomplete-leads" icon={AlertCircle} label="Unverified" />
-          <NavItem to="/companies" icon={Briefcase} label="Companies" />
-          <NavItem to="/calendar" icon={Calendar} label="Calendar" />
-          <NavItem to="/tasks" icon={CheckSquare} label="Tasks" />
+        {/* Navigation Categories */}
+        <nav className="flex-1 flex flex-col gap-5 overflow-y-auto no-scrollbar pr-0.5">
+          {/* Main Pipeline Section */}
+          <div className="space-y-1">
+            {!isSidebarCollapsed && (
+              <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 mb-1">
+                Core Sales Engine
+              </p>
+            )}
+            <NavItem to="/" icon={Home} label="Dashboard" />
+            <NavItem to="/leads" icon={Users} label="Pipeline & Deals" badge={leads.length} />
+            <NavItem to="/easy-contact" icon={Phone} label="Speed Dial Queue" />
+          </div>
+
+          {/* Account Intelligence Section */}
+          <div className="space-y-1">
+            {!isSidebarCollapsed && (
+              <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 mb-1">
+                Accounts & Roster
+              </p>
+            )}
+            <NavItem to="/companies" icon={Briefcase} label="Target Companies" />
+            <NavItem to="/incomplete-leads" icon={AlertCircle} label="Pending Contacts" badge={incompleteLeads.length} />
+          </div>
+
+          {/* Execution Section */}
+          <div className="space-y-1">
+            {!isSidebarCollapsed && (
+              <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 mb-1">
+                Execution
+              </p>
+            )}
+            <NavItem to="/tasks" icon={CheckSquare} label="Action Items" badge={tasks.filter(t => !t.completed).length} />
+            <NavItem to="/calendar" icon={Calendar} label="Meetings Schedule" />
+          </div>
         </nav>
 
+        {/* Sidebar Footer */}
         <div className="pt-3 border-t border-border mt-auto">
-          <NavItem to="/settings" icon={Settings} label="Settings" />
+          <NavItem to="/settings" icon={Settings} label="System Settings" />
         </div>
       </aside>
 
@@ -283,7 +322,7 @@ export default function AppLayout() {
           <span className="text-[10px]">Pipeline</span>
         </Link>
         
-        {/* Floating Call Center Action */}
+        {/* Floating Speed Dial Action */}
         <Link 
           to="/easy-contact" 
           className="relative -top-3 bg-blue-600 text-white p-3 rounded-2xl shadow-lg shadow-blue-500/30 flex items-center justify-center transform active:scale-95 transition-all"
