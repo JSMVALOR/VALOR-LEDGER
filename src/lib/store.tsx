@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { initialLeads, initialCompanies, initialTasks, initialEvents, initialActivities } from './data';
 import { supabase, isSupabaseConfigured } from './supabase';
 
 export type UserRole = 'superadmin' | 'user';
@@ -68,12 +67,21 @@ export const INITIAL_USERS: UserAccount[] = [
   },
 ];
 
-export const TEAM_MEMBERS = INITIAL_USERS.map(u => ({
+export type TeamMember = {
+  id: string;
+  name: string;
+  role: string;
+  avatar: string;
+  status: 'active' | 'away' | 'offline';
+};
+
+// Dynamic exported TEAM_MEMBERS for backward-compatibility with direct imports
+export let TEAM_MEMBERS: TeamMember[] = INITIAL_USERS.map(u => ({
   id: u.username,
   name: u.name,
   role: u.role === 'superadmin' ? 'Superadmin / Sales Director' : 'Sales Representative',
   avatar: u.avatar,
-  status: u.status as 'active' | 'away' | 'offline',
+  status: (u.status === 'active' ? 'active' : 'offline') as 'active' | 'away' | 'offline',
 }));
 
 export type LeadStage = 'New' | 'Contacted' | 'Qualified' | 'Meeting Scheduled' | 'Proposal Sent' | 'Negotiation' | 'Won' | 'Lost';
@@ -147,6 +155,7 @@ type StoreContextType = {
   updateCredentials: (userId: string, newPassword: string, newPin: string) => void;
   createUser: (userData: Omit<UserAccount, 'id' | 'createdAt' | 'status' | 'avatar'>) => void;
   logout: () => void;
+  teamMembers: TeamMember[];
   
   // Pipeline & Core Store
   leads: Lead[];
@@ -155,6 +164,7 @@ type StoreContextType = {
   addLead: (lead: Omit<Lead, 'id' | 'createdAt'>) => void;
   updateLeadStage: (id: string, stage: LeadStage) => void;
   assignLead: (id: string, rep: string) => void;
+  updateLead: (id: string, updates: Partial<Lead>) => void;
   companies: Company[];
   addCompany: (company: Omit<Company, 'id'>) => void;
   tasks: Task[];
@@ -167,6 +177,7 @@ type StoreContextType = {
   selectedItem: SelectedItem;
   setSelectedItem: (item: SelectedItem) => void;
   isCloudSynced: boolean;
+  isLoadingCloud: boolean;
 };
 
 const StoreContext = createContext<StoreContextType | null>(null);
@@ -177,16 +188,10 @@ export const useStore = () => {
   return ctx;
 };
 
-const seedAssignedLeads = (rawLeads: Lead[]): Lead[] => {
-  const reps = ['swaroop', 'vijay', 'nithish'];
-  return rawLeads.map((l, idx) => ({
-    ...l,
-    assignedTo: l.assignedTo || reps[idx % reps.length],
-    createdAt: l.createdAt || (Date.now() - (idx * 86400000)),
-  }));
-};
-
 export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
+  const [isLoadingCloud, setIsLoadingCloud] = useState(true);
+  const [isCloudSynced, setIsCloudSynced] = useState(false);
+
   // Users state
   const [users, setUsers] = useState<UserAccount[]>(() => {
     const saved = localStorage.getItem('valor_users_v2');
@@ -205,60 +210,200 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     return null;
   });
 
+  // Pipeline Collections (initialized from local storage cache if available)
   const [leads, setLeads] = useState<Lead[]>(() => {
     const saved = localStorage.getItem('valor_leads_cache');
     if (saved) {
       try { return JSON.parse(saved); } catch (e) { /* fallback */ }
     }
-    return seedAssignedLeads(initialLeads);
+    return [];
   });
 
-  const [companies, setCompanies] = useState<Company[]>(initialCompanies);
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
-  const [events, setEvents] = useState<Event[]>(initialEvents);
+  const [companies, setCompanies] = useState<Company[]>(() => {
+    const saved = localStorage.getItem('valor_companies_cache');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { /* fallback */ }
+    }
+    return [];
+  });
+
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    const saved = localStorage.getItem('valor_tasks_cache');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { /* fallback */ }
+    }
+    return [];
+  });
+
+  const [events, setEvents] = useState<Event[]>(() => {
+    const saved = localStorage.getItem('valor_events_cache');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { /* fallback */ }
+    }
+    return [];
+  });
+
   const [activities, setActivities] = useState<Activity[]>(() => {
     const saved = localStorage.getItem('valor_activity_audit');
     if (saved) {
       try { return JSON.parse(saved); } catch (e) { /* fallback */ }
     }
-    return initialActivities.map(a => ({ ...a, timestamp: Date.now() }));
+    return [];
   });
-  const [selectedItem, setSelectedItem] = useState<SelectedItem>(null);
-  const [isCloudSynced, setIsCloudSynced] = useState(isSupabaseConfigured);
 
-  // Sync users
+  const [selectedItem, setSelectedItem] = useState<SelectedItem>(null);
+
+  // Dynamically update exported TEAM_MEMBERS whenever users change
   useEffect(() => {
-    localStorage.setItem('valor_users_v2', JSON.stringify(users));
+    TEAM_MEMBERS = users.map(u => ({
+      id: u.username,
+      name: u.name,
+      role: u.role === 'superadmin' ? 'Superadmin / Sales Director' : 'Sales Representative',
+      avatar: u.avatar,
+      status: (u.status === 'active' ? 'active' : 'offline') as 'active' | 'away' | 'offline',
+    }));
   }, [users]);
 
-  // Sync activities
+  // Sync to local caches for instant offline fallback
   useEffect(() => {
-    localStorage.setItem('valor_activity_audit', JSON.stringify(activities));
-  }, [activities]);
+    try { localStorage.setItem('valor_users_v2', JSON.stringify(users)); } catch (e) {}
+  }, [users]);
 
-  // Sync leads cache
   useEffect(() => {
-    localStorage.setItem('valor_leads_cache', JSON.stringify(leads));
+    try { localStorage.setItem('valor_leads_cache', JSON.stringify(leads)); } catch (e) {}
   }, [leads]);
 
-  // Optional Supabase initial fetch
   useEffect(() => {
-    if (!isSupabaseConfigured || !supabase) return;
-    
-    const fetchCloud = async () => {
+    try { localStorage.setItem('valor_companies_cache', JSON.stringify(companies)); } catch (e) {}
+  }, [companies]);
+
+  useEffect(() => {
+    try { localStorage.setItem('valor_tasks_cache', JSON.stringify(tasks)); } catch (e) {}
+  }, [tasks]);
+
+  useEffect(() => {
+    try { localStorage.setItem('valor_events_cache', JSON.stringify(events)); } catch (e) {}
+  }, [events]);
+
+  useEffect(() => {
+    try { localStorage.setItem('valor_activity_audit', JSON.stringify(activities)); } catch (e) {}
+  }, [activities]);
+
+  // Initial Data Fetch from Supabase Cloud
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) {
+      setIsLoadingCloud(false);
+      return;
+    }
+
+    const fetchAllData = async () => {
       try {
         const client = supabase;
         if (!client) return;
-        const { data, error } = await client.from('leads').select('*');
-        if (!error && data && data.length > 0) {
-          setLeads(data);
-          setIsCloudSynced(true);
+
+        // Fetch all in parallel
+        const [
+          usersRes,
+          leadsRes,
+          companiesRes,
+          tasksRes,
+          eventsRes,
+          activitiesRes,
+        ] = await Promise.all([
+          client.from('users').select('*'),
+          client.from('leads').select('*').order('createdAt', { ascending: false }),
+          client.from('companies').select('*'),
+          client.from('tasks').select('*'),
+          client.from('events').select('*'),
+          client.from('activities').select('*').order('timestamp', { ascending: false }).limit(60),
+        ]);
+
+        if (usersRes.data && usersRes.data.length > 0) {
+          setUsers(usersRes.data as UserAccount[]);
         }
+
+        if (leadsRes.data) {
+          setLeads(leadsRes.data as Lead[]);
+        }
+
+        if (companiesRes.data) {
+          setCompanies(companiesRes.data as Company[]);
+        }
+
+        if (tasksRes.data) {
+          setTasks(tasksRes.data as Task[]);
+        }
+
+        if (eventsRes.data) {
+          setEvents(eventsRes.data as Event[]);
+        }
+
+        if (activitiesRes.data && activitiesRes.data.length > 0) {
+          setActivities(activitiesRes.data as Activity[]);
+        }
+
+        setIsCloudSynced(true);
       } catch (err) {
-        console.warn('Supabase offline fallback:', err);
+        console.warn('Supabase fetch error, using cache:', err);
+      } finally {
+        setIsLoadingCloud(false);
       }
     };
-    fetchCloud();
+
+    fetchAllData();
+
+    // Setup Supabase Realtime multi-client live sync
+    const realtimeChannel = supabase
+      .channel('valor-realtime-channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, payload => {
+        if (payload.eventType === 'INSERT') {
+          const inserted = payload.new as Lead;
+          setLeads(prev => prev.some(l => l.id === inserted.id) ? prev : [inserted, ...prev]);
+        } else if (payload.eventType === 'UPDATE') {
+          const updated = payload.new as Lead;
+          setLeads(prev => prev.map(l => l.id === updated.id ? { ...l, ...updated } : l));
+        } else if (payload.eventType === 'DELETE') {
+          const oldId = (payload.old as any)?.id;
+          if (oldId) setLeads(prev => prev.filter(l => l.id !== oldId));
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, payload => {
+        if (payload.eventType === 'INSERT') {
+          const inserted = payload.new as Task;
+          setTasks(prev => prev.some(t => t.id === inserted.id) ? prev : [inserted, ...prev]);
+        } else if (payload.eventType === 'UPDATE') {
+          const updated = payload.new as Task;
+          setTasks(prev => prev.map(t => t.id === updated.id ? { ...t, ...updated } : t));
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, payload => {
+        if (payload.eventType === 'INSERT') {
+          const inserted = payload.new as Activity;
+          setActivities(prev => prev.some(a => a.id === inserted.id) ? prev : [inserted, ...prev]);
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'companies' }, payload => {
+        if (payload.eventType === 'INSERT') {
+          const inserted = payload.new as Company;
+          setCompanies(prev => prev.some(c => c.id === inserted.id) ? prev : [inserted, ...prev]);
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, payload => {
+        if (payload.eventType === 'INSERT') {
+          const inserted = payload.new as UserAccount;
+          setUsers(prev => prev.some(u => u.id === inserted.id) ? prev : [...prev, inserted]);
+        } else if (payload.eventType === 'UPDATE') {
+          const updated = payload.new as UserAccount;
+          setUsers(prev => prev.map(u => u.id === updated.id ? { ...u, ...updated } : u));
+        }
+      })
+      .subscribe();
+
+    return () => {
+      if (supabase) {
+        supabase.removeChannel(realtimeChannel);
+      }
+    };
   }, []);
 
   const logActivity = (action: string, target: string) => {
@@ -272,6 +417,10 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       timestamp: Date.now(),
     };
     setActivities(prev => [newAct, ...prev]);
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('activities').insert([newAct]).then();
+    }
   };
 
   // Step 1: Username & Password Verification
@@ -319,6 +468,15 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       }
       return u;
     }));
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('users').update({
+        password: newPassword,
+        pin: newPin,
+        mustChangeCredentials: false
+      }).eq('id', userId).then();
+    }
+
     logActivity('Security credential updated:', `Password & PIN updated for user ID ${userId}`);
   };
 
@@ -333,6 +491,11 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       createdAt: Date.now(),
     };
     setUsers(prev => [...prev, newUser]);
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('users').insert([newUser]).then();
+    }
+
     logActivity('User account created:', `Created user ${newUser.username} as ${newUser.role}`);
   };
 
@@ -388,35 +551,83 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const updateLead = (id: string, updates: Partial<Lead>) => {
+    setLeads(prev => prev.map(l => {
+      if (l.id === id) {
+        const updated = { ...l, ...updates };
+        logActivity('Updated prospect details:', updated.company);
+        return updated;
+      }
+      return l;
+    }));
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('leads').update(updates).eq('id', id).then();
+    }
+  };
+
   const addCompany = (companyData: Omit<Company, 'id'>) => {
-    setCompanies(prev => [{ ...companyData, id: Math.random().toString(36).substr(2, 9) }, ...prev]);
+    const newCompany: Company = { ...companyData, id: Math.random().toString(36).substr(2, 9) };
+    setCompanies(prev => [newCompany, ...prev]);
     logActivity('Added organization:', companyData.name);
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('companies').insert([newCompany]).then();
+    }
   };
 
   const addTask = (taskData: Omit<Task, 'id' | 'completed'>) => {
-    setTasks(prev => [{ ...taskData, id: Math.random().toString(36).substr(2, 9), completed: false }, ...prev]);
+    const newTask: Task = { ...taskData, id: Math.random().toString(36).substr(2, 9), completed: false };
+    setTasks(prev => [newTask, ...prev]);
     logActivity('Added action item:', taskData.title);
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('tasks').insert([newTask]).then();
+    }
   };
 
   const toggleTask = (id: string) => {
+    let nextCompleted = false;
+    let taskTitle = '';
     setTasks(prev => prev.map(t => {
       if (t.id === id) {
-        const nextState = !t.completed;
-        logActivity(nextState ? 'Completed task:' : 'Reopened task:', t.title);
-        return { ...t, completed: nextState };
+        nextCompleted = !t.completed;
+        taskTitle = t.title;
+        return { ...t, completed: nextCompleted };
       }
       return t;
     }));
+
+    if (taskTitle) {
+      logActivity(nextCompleted ? 'Completed task:' : 'Reopened task:', taskTitle);
+    }
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('tasks').update({ completed: nextCompleted }).eq('id', id).then();
+    }
   };
 
   const addEvent = (eventData: Omit<Event, 'id'>) => {
-    setEvents(prev => [{ ...eventData, id: Math.random().toString(36).substr(2, 9) }, ...prev]);
+    const newEvent: Event = { ...eventData, id: Math.random().toString(36).substr(2, 9) };
+    setEvents(prev => [newEvent, ...prev]);
     logActivity('Scheduled event:', eventData.title);
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('events').insert([newEvent]).then();
+    }
   };
 
   const hasContactInfo = (l: Lead) => Boolean((l.phone && l.phone !== 'N/A') || (l.website && l.website !== '') || (l.email && l.email !== ''));
   const validLeads = leads.filter(hasContactInfo);
   const incompleteLeads = leads.filter(l => !hasContactInfo(l));
+
+  const teamMembers = users.map(u => ({
+    id: u.username,
+    name: u.name,
+    role: u.role === 'superadmin' ? 'Superadmin / Sales Director' : 'Sales Representative',
+    avatar: u.avatar,
+    status: (u.status === 'active' ? 'active' : 'offline') as 'active' | 'away' | 'offline',
+  }));
 
   return (
     <StoreContext.Provider value={{
@@ -427,12 +638,14 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       updateCredentials,
       createUser,
       logout,
+      teamMembers,
       leads: validLeads,
       allLeads: leads,
       incompleteLeads,
       addLead,
       updateLeadStage,
       assignLead,
+      updateLead,
       companies,
       addCompany,
       tasks,
@@ -445,6 +658,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       selectedItem,
       setSelectedItem,
       isCloudSynced,
+      isLoadingCloud,
     }}>
       {children}
     </StoreContext.Provider>

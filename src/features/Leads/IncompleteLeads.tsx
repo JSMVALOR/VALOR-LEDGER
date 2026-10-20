@@ -13,7 +13,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { useStore, type Lead, TEAM_MEMBERS } from '../../lib/store';
 
 export function IncompleteLeadsPage() {
-  const { incompleteLeads, addLead } = useStore();
+  const { incompleteLeads, updateLead } = useStore();
   const [search, setSearch] = useState('');
   const [cityFilter, setCityFilter] = useState('All');
 
@@ -52,19 +52,12 @@ export function IncompleteLeadsPage() {
     e.preventDefault();
     if (!enrichingLead) return;
 
-    addLead({
-      company: enrichingLead.company,
+    updateLead(enrichingLead.id, {
       contactPerson: contactInput || 'Decision Maker',
       phone: phoneInput || '+91 9800000000',
-      city: enrichingLead.city,
-      industry: enrichingLead.industry,
-      stage: 'New',
-      priority: enrichingLead.priority,
-      value: enrichingLead.value || 10000,
-      nextFollowUp: 'Initial Outreach',
-      email: enrichingLead.email,
       website: websiteInput.trim(),
       assignedTo: assignedRep,
+      stage: 'New',
     });
 
     setEnrichingLead(null);

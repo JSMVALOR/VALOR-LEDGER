@@ -174,7 +174,7 @@ function InspectorDrawerContent({ item, onClose }: { item: SelectedItem; onClose
 
 export default function AppLayout() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const { selectedItem, setSelectedItem, currentUser, logout, leads, incompleteLeads, tasks } = useStore();
+  const { selectedItem, setSelectedItem, currentUser, logout, leads, incompleteLeads, tasks, isCloudSynced, isLoadingCloud } = useStore();
   const location = useLocation();
 
   const isSuperadmin = currentUser?.role === 'superadmin';
@@ -280,6 +280,26 @@ export default function AppLayout() {
 
       {/* Main Workspace */}
       <main className="flex-1 flex flex-col overflow-hidden bg-slate-50 relative">
+        {/* Mobile Topbar (< 768px) */}
+        <header className="h-12 border-b border-slate-200/80 bg-white/95 backdrop-blur-md flex items-center justify-between px-4 z-10 md:hidden">
+          <div className="flex items-center gap-2">
+            <ValorLogo className="scale-75 origin-left" />
+          </div>
+          <div className="flex items-center gap-2">
+            <div className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+              isCloudSynced 
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                : 'bg-amber-50 text-amber-700 border-amber-200'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${isCloudSynced ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`}></span>
+              {isCloudSynced ? 'Supabase Live' : isLoadingCloud ? 'Syncing...' : 'Cached'}
+            </div>
+            <Link to="/settings" className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
+              {((currentUser?.name || currentUser?.username || 'V').substring(0, 1)).toUpperCase()}
+            </Link>
+          </div>
+        </header>
+
         {/* Desktop Topbar */}
         <header className="h-14 border-b border-slate-200/80 bg-white/90 backdrop-blur-md flex items-center justify-between px-6 z-10 hidden md:flex">
           <div className="text-xs text-slate-400 flex items-center gap-2 font-medium">
@@ -291,6 +311,16 @@ export default function AppLayout() {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Supabase Cloud Live Status Pill */}
+            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all ${
+              isCloudSynced 
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                : 'bg-amber-50 text-amber-700 border-amber-200'
+            }`}>
+              <span className={`w-2 h-2 rounded-full ${isCloudSynced ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`}></span>
+              {isCloudSynced ? 'Supabase Live Cloud' : isLoadingCloud ? 'Syncing Cloud...' : 'Cached Mode'}
+            </div>
+
             <Link
               to="/leads"
               className="bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-blue-500/20 active:scale-[0.98] transition-all"
