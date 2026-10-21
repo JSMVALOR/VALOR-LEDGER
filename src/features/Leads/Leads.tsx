@@ -42,7 +42,7 @@ export function LeadsPage() {
     contactPerson: '',
     phone: '',
     city: 'Bangalore',
-    industry: 'Legal',
+    industry: 'Legal & Law Chambers',
     stage: 'New' as LeadStage,
     priority: 'Medium' as Priority,
     value: '10000',
@@ -626,13 +626,20 @@ export function LeadsPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Industry</label>
-                  <input
-                    type="text"
-                    placeholder="Legal, Clinic..."
+                  <select
                     value={newLeadForm.industry}
                     onChange={(e) => setNewLeadForm({ ...newLeadForm, industry: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none font-medium text-slate-900"
-                  />
+                  >
+                    <option value="Legal & Law Chambers">Legal & Law Chambers</option>
+                    <option value="Dental & Medical Clinics">Dental & Medical Clinics</option>
+                    <option value="Architecture & Interior Design">Architecture & Interior Design</option>
+                    <option value="Chartered Accountants & Tax">Chartered Accountants & Tax</option>
+                    <option value="Real Estate Agencies">Real Estate Agencies</option>
+                    <option value="Fitness & Wellness Studios">Fitness & Wellness Studios</option>
+                    <option value="Cafes & Specialty Dining">Cafes & Specialty Dining</option>
+                    <option value="Creative & Tech Studios">Creative & Tech Studios</option>
+                  </select>
                 </div>
               </div>
 
