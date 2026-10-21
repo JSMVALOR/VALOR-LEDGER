@@ -9,173 +9,19 @@ import {
   Settings, 
   Plus, 
   Phone, 
-  Mail, 
-  Globe, 
-  MapPin, 
   ChevronLeft, 
   ChevronRight, 
   AlertCircle,
-  X,
   LogOut,
-  Flame,
-  ShieldCheck,
   Compass
 } from 'lucide-react';
 
 import ValorLogo from '../components/shared/ValorLogo';
-import { useStore, TEAM_MEMBERS, type SelectedItem } from '../lib/store';
-
-function InspectorDrawerContent({ item, onClose }: { item: SelectedItem; onClose?: () => void }) {
-  const { leads, incompleteLeads, updateLeadStage, assignLead } = useStore();
-
-  if (!item) return null;
-
-  if (item.type === 'lead') {
-    const lead = leads.find(l => l.id === item.id) || incompleteLeads.find(l => l.id === item.id);
-    if (!lead) return <div className="text-xs text-slate-400 text-center mt-10">Account not found</div>;
-
-    const cleanPhone = (lead.phone || '').split('/')[0].replace(/[^0-9+]/g, '');
-    const hasWebsite = Boolean(lead.website && lead.website.trim().length > 3);
-
-    const stageColors: Record<string, string> = {
-      'New': 'bg-blue-50 text-blue-700 border-blue-200',
-      'Contacted': 'bg-slate-100 text-slate-700 border-slate-200',
-      'Qualified': 'bg-indigo-50 text-indigo-700 border-indigo-200',
-      'Meeting Scheduled': 'bg-amber-50 text-amber-800 border-amber-200',
-      'Proposal Sent': 'bg-purple-50 text-purple-700 border-purple-200',
-      'Negotiation': 'bg-pink-50 text-pink-700 border-pink-200',
-      'Won': 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      'Lost': 'bg-rose-50 text-rose-700 border-rose-200',
-    };
-
-    return (
-      <div className="flex flex-col space-y-5">
-        {/* Top Header */}
-        <div className="flex items-start justify-between pb-3 border-b border-slate-100">
-          <div className="min-w-0 flex-1 pr-2">
-            <h2 className="text-lg font-bold text-slate-900 leading-snug truncate">{lead.company}</h2>
-            <p className="text-xs text-slate-500 mt-0.5">{lead.contactPerson || 'Decision Maker'} • {lead.city}</p>
-          </div>
-          {onClose && (
-            <button onClick={onClose} className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 border border-slate-200">
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-
-        {/* Website Opportunity Alert */}
-        <div>
-          {!hasWebsite ? (
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-2 text-xs font-bold text-amber-800">
-              <Flame className="w-4 h-4 text-amber-500 shrink-0" />
-              <span>Needs Website — Prime Sales Target!</span>
-            </div>
-          ) : (
-            <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-2xl flex items-center justify-between text-xs text-blue-800">
-              <span className="font-semibold flex items-center gap-1.5">
-                <Globe className="w-3.5 h-3.5 text-blue-600" /> Existing Website
-              </span>
-              <a 
-                href={lead.website!.startsWith('http') ? lead.website : `https://${lead.website}`}
-                target="_blank"
-                rel="noreferrer"
-                className="font-bold underline text-blue-600"
-              >
-                Visit Link
-              </a>
-            </div>
-          )}
-        </div>
-
-        {/* Stage & Rep Controls */}
-        <div className="space-y-3.5">
-          <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-              Deal Pipeline Stage
-            </label>
-            <select 
-              value={lead.stage}
-              onChange={(e) => updateLeadStage(lead.id, e.target.value as any)}
-              className={`w-full text-xs font-bold px-3 py-2.5 rounded-xl border focus:outline-none cursor-pointer ${stageColors[lead.stage] || 'bg-white text-slate-800'}`}
-            >
-              <option value="New">New</option>
-              <option value="Contacted">Contacted</option>
-              <option value="Qualified">Qualified</option>
-              <option value="Meeting Scheduled">Meeting Scheduled</option>
-              <option value="Proposal Sent">Proposal Sent</option>
-              <option value="Negotiation">Negotiation</option>
-              <option value="Won">Won</option>
-              <option value="Lost">Lost</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-              Assigned Sales Rep
-            </label>
-            <select 
-              value={lead.assignedTo || 'swaroop'}
-              onChange={(e) => assignLead(lead.id, e.target.value)}
-              className="w-full text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none capitalize"
-            >
-              {TEAM_MEMBERS.map(m => (
-                <option key={m.id} value={m.id}>{m.name} ({m.role})</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Contact Quick Triggers */}
-        <div className="space-y-2 pt-3 border-t border-slate-100">
-          <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-            Direct Outreach
-          </label>
-
-          {lead.phone && lead.phone !== 'N/A' ? (
-            <a 
-              href={`tel:${cleanPhone}`}
-              onClick={() => updateLeadStage(lead.id, 'Contacted')}
-              className="flex items-center justify-center gap-2 p-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-500/20 active:scale-[0.98] transition-all"
-            >
-              <Phone className="w-4 h-4 shrink-0" />
-              <span>Call {lead.phone}</span>
-            </a>
-          ) : (
-            <div className="p-2.5 rounded-xl bg-slate-100 text-slate-400 text-center text-xs font-medium">
-              No Phone Available
-            </div>
-          )}
-
-          {lead.email && (
-            <a 
-              href={`mailto:${lead.email}`}
-              className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium hover:border-blue-300 transition-colors"
-            >
-              <Mail className="w-4 h-4 text-slate-400 shrink-0" />
-              <span className="truncate">{lead.email}</span>
-            </a>
-          )}
-        </div>
-
-        {/* Target Deal Value */}
-        <div className="pt-3 border-t border-slate-100">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
-            Target Retainer Value
-          </span>
-          <p className="text-xl font-extrabold text-slate-900">
-            ₹{(lead.value || 10000).toLocaleString('en-IN')}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  return null;
-}
+import { useStore, TEAM_MEMBERS } from '../lib/store';
 
 export default function AppLayout() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const { selectedItem, setSelectedItem, currentUser, logout, leads, incompleteLeads, tasks, isCloudSynced, isLoadingCloud } = useStore();
+  const { currentUser, logout, leads, incompleteLeads, tasks, isCloudSynced, isLoadingCloud } = useStore();
   const location = useLocation();
 
   const isSuperadmin = currentUser?.role === 'superadmin';
@@ -374,35 +220,6 @@ export default function AppLayout() {
           <Outlet />
         </div>
       </main>
-      
-      {/* Right Drawer (Desktop >= 1024px) */}
-      <aside className="hidden lg:block w-80 border-l border-slate-200/80 bg-white p-5 overflow-y-auto">
-        {selectedItem ? (
-          <InspectorDrawerContent item={selectedItem} onClose={() => setSelectedItem(null)} />
-        ) : (
-          <div className="text-xs text-slate-400 text-center mt-16 space-y-1.5">
-            <p className="font-bold text-slate-800 text-sm">Prospect Inspector</p>
-            <p className="max-w-[200px] mx-auto text-slate-400">
-              Tap any business in the pipeline or speed dial queue to view direct dials & rep notes.
-            </p>
-          </div>
-        )}
-      </aside>
-
-      {/* Mobile Bottom Sheet Drawer (< 1024px) */}
-      {selectedItem && (
-        <div 
-          onClick={() => setSelectedItem(null)}
-          className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end bg-slate-900/50 backdrop-blur-sm animate-fade-in"
-        >
-          <div 
-            onClick={(e) => e.stopPropagation()}
-            className="bg-white border-t border-slate-200 rounded-t-3xl p-6 max-h-[85vh] overflow-y-auto shadow-2xl space-y-4"
-          >
-            <InspectorDrawerContent item={selectedItem} onClose={() => setSelectedItem(null)} />
-          </div>
-        </div>
-      )}
 
       {/* Sleek Mobile Bottom Navigation Bar (< 768px) */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/80 flex justify-around items-center px-2 py-2 z-40 pb-safe shadow-lg shadow-slate-200">

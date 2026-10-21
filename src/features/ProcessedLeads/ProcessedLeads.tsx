@@ -12,7 +12,7 @@ import {
 import { useStore } from '../../lib/store';
 
 export function ProcessedLeads() {
-  const { leads, updateLeadStage, setSelectedItem } = useStore();
+  const { leads, updateLeadStage } = useStore();
   const [search, setSearch] = useState('');
   const [stageFilter, setStageFilter] = useState('All');
 
@@ -117,8 +117,7 @@ export function ProcessedLeads() {
           return (
             <div
               key={lead.id}
-              onClick={() => setSelectedItem({ type: 'lead', id: lead.id })}
-              className="bg-white border border-slate-200/80 hover:border-blue-400 p-4 rounded-2xl flex flex-col justify-between space-y-3 shadow-sm transition-all cursor-pointer"
+              className="bg-white border border-slate-200/80 hover:border-slate-300 p-4 rounded-2xl flex flex-col justify-between space-y-3 shadow-sm transition-all"
             >
               <div>
                 <div className="flex items-start justify-between gap-2">

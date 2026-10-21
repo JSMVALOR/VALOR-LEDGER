@@ -21,7 +21,7 @@ import {
 import { useStore, TEAM_MEMBERS, type Lead, type LeadStage } from '../../lib/store';
 
 export function EasyContact() {
-  const { leads, updateLeadStage, assignLead, setSelectedItem } = useStore();
+  const { leads, updateLeadStage, assignLead } = useStore();
 
   const [dialMode, setDialMode] = useState<'deck' | 'list'>('deck');
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -298,24 +298,24 @@ export function EasyContact() {
                   </div>
                 </div>
 
-                {/* Nav arrows & inspection */}
+                {/* Nav arrows & position count */}
                 <div className="flex items-center justify-between pt-2">
                   <button
                     onClick={handlePrev}
                     disabled={currentIndex === 0}
                     className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:text-slate-800 disabled:opacity-30 disabled:pointer-events-none"
+                    title="Previous lead"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
-                  <button
-                    onClick={() => setSelectedItem({ type: 'lead', id: currentLead.id })}
-                    className="text-xs font-semibold text-blue-600 hover:underline"
-                  >
-                    Inspect Full Details
-                  </button>
+                  <span className="text-xs font-semibold text-slate-500">
+                    Lead {currentIndex + 1} of {filteredQueue.length}
+                  </span>
                   <button
                     onClick={handleNext}
-                    className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:text-slate-800"
+                    disabled={currentIndex >= filteredQueue.length - 1}
+                    className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:text-slate-800 disabled:opacity-30 disabled:pointer-events-none"
+                    title="Next lead"
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>
@@ -344,8 +344,7 @@ export function EasyContact() {
             return (
               <div
                 key={lead.id}
-                onClick={() => setSelectedItem({ type: 'lead', id: lead.id })}
-                className="bg-white border border-slate-200/80 hover:border-blue-400 p-4 rounded-2xl flex flex-col justify-between space-y-3 shadow-sm transition-all cursor-pointer"
+                className="bg-white border border-slate-200/80 hover:border-slate-300 p-4 rounded-2xl flex flex-col justify-between space-y-3 shadow-sm transition-all"
               >
                 <div>
                   <div className="flex justify-between items-start gap-2">
