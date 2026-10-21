@@ -267,77 +267,58 @@ export function LeadScraper() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-20 md:pb-6">
-      {/* Top Banner */}
-      <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 rounded-3xl p-6 md:p-8 text-white shadow-xl shadow-blue-900/10 relative overflow-hidden">
-        <div className="absolute right-0 top-0 w-96 h-96 bg-white/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="max-w-2xl space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs font-semibold text-blue-100">
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span>Intelligent SMB Prospect Engine</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-              Lead Scraper & Market Radar
+    <div className="max-w-7xl mx-auto space-y-5 pb-20 md:pb-6">
+      {/* Sleek Header & Fast Actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              Lead Scraper
             </h1>
-            <p className="text-sm text-blue-100/90 leading-relaxed">
-              Find commercial SMB offices, boutique firms, private clinics, and local agencies across India. 
-              Configure custom block rules, set keyword limits, and push qualified leads straight to Supabase.
-            </p>
-          </div>
-
-          <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 sm:border-l border-white/15 pt-4 sm:pt-0 sm:pl-6 shrink-0 gap-2">
-            <span className="text-xs text-blue-200">Active Live Database</span>
-            <span className="text-2xl sm:text-3xl font-black tracking-tight">{leads.length} Leads</span>
-            <span className="text-[11px] font-bold text-emerald-300 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              Supabase PostgreSQL Synced
+            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+              {leads.length} in database · Supabase Live
             </span>
           </div>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Discover verified SMB offices, clinics, and law chambers. Blocklist rules filter out junk automatically.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowBlocklistManager(!showBlocklistManager)}
+            className={`px-3 py-1.5 border rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+              showBlocklistManager 
+                ? 'bg-rose-50 border-rose-200 text-rose-700' 
+                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            <Sliders className="w-3.5 h-3.5 text-rose-600" />
+            <span>Blocklist Rules ({blockedKeywords.length})</span>
+          </button>
+
+          <button
+            onClick={handleResetBlocklist}
+            title="Reset to default blocklist"
+            className="p-1.5 rounded-xl border border-slate-200 text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
-      {/* Manual Blocklist & Limits Banner / Drawer Toggle */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-sm space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-200/80">
-              <ShieldAlert className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                Manual Blocklist & Limitation Controls
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 border border-rose-200">
-                  {blockedKeywords.length} Active Rules
-                </span>
+      {/* Expandable Blocklist Drawer */}
+      {showBlocklistManager && (
+        <div className="bg-white rounded-2xl border border-rose-200/80 p-4 sm:p-5 shadow-2xs space-y-3 animate-fade-in text-xs">
+          <div className="flex items-center justify-between border-b border-rose-100 pb-2">
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-rose-600" />
+              <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                Active Negative Rules & Guardrails
               </h2>
-              <p className="text-xs text-slate-500">
-                Manually block specific words, entities, or categories to prevent junk or unwanted listings from entering your CRM.
-              </p>
             </div>
+            <span className="text-[11px] text-slate-400">Drops matching titles & keywords</span>
           </div>
-
-          <div className="flex items-center gap-2 self-start sm:self-auto">
-            <button
-              onClick={() => setShowBlocklistManager(!showBlocklistManager)}
-              className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors"
-            >
-              <Sliders className="w-3.5 h-3.5" />
-              {showBlocklistManager ? 'Hide Block Controls' : 'Edit Block Rules'}
-            </button>
-            <button
-              onClick={handleResetBlocklist}
-              title="Reset to default safe blocklist"
-              className="p-1.5 rounded-xl border border-slate-200 text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Expandable Blocklist Manager */}
-        {showBlocklistManager && (
-          <div className="pt-4 border-t border-slate-100 space-y-4 animate-fade-in text-xs">
             {/* Add Custom Block Keyword Form */}
             <form onSubmit={handleAddBlockKeyword} className="flex gap-2">
               <input
@@ -409,7 +390,6 @@ export function LeadScraper() {
             </div>
           </div>
         )}
-      </div>
 
       {/* Control Panel Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -1,12 +1,8 @@
 import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
 import { 
   Plus, 
   Search, 
-  Filter, 
   Download, 
-  LayoutGrid, 
-  List, 
   Phone, 
   Calendar, 
   CheckCircle2, 
@@ -14,18 +10,15 @@ import {
   Globe, 
   Sparkles, 
   MapPin, 
-  Building2, 
   ExternalLink, 
   ChevronRight, 
   Flame, 
-  AlertTriangle,
-  Compass,
   RefreshCw,
-  TrendingUp,
+  LayoutGrid,
+  List,
   User,
-  ArrowUpDown,
-  Check,
-  Grid
+  SlidersHorizontal,
+  ArrowUpRight
 } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useStore, TEAM_MEMBERS, type Lead, type LeadStage, type Priority } from '../../lib/store';
@@ -42,24 +35,27 @@ const STAGES: LeadStage[] = [
 ];
 
 export function LeadsPage() {
-  const { leads, addLead, updateLeadStage, assignLead, refreshData, isLoadingCloud } = useStore();
+  const { leads, addLead, updateLeadStage, updateLead, assignLead, refreshData, isLoadingCloud } = useStore();
 
-  // Top Category Filter
+  // Unified segment filter
   const [filterMode, setFilterMode] = useState<'all' | 'no-website' | 'has-website' | 'meetings' | 'won'>('all');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
 
-  // Search & Secondary Filters
+  // Search & Filters
   const [search, setSearch] = useState('');
   const [selectedRep, setSelectedRep] = useState('All');
   const [cityFilter, setCityFilter] = useState('All');
   const [industryFilter, setIndustryFilter] = useState('All');
+  const [showFilters, setShowFilters] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Pagination / Load more
+  // Pagination
   const [visibleCount, setVisibleCount] = useState(30);
 
-  // Add Lead Modal State
+  // Modals
   const [openModal, setOpenModal] = useState(false);
+  const [detailLead, setDetailLead] = useState<Lead | null>(null);
+
   const [newLeadForm, setNewLeadForm] = useState({
     company: '',
     contactPerson: '',
@@ -92,26 +88,25 @@ export function LeadsPage() {
     return ['All', ...Array.from(set).sort()];
   }, [leads]);
 
-  // Primary Category Filter
-  const categoryFilteredLeads = useMemo(() => {
-    if (filterMode === 'no-website') {
-      return leads.filter(l => !l.website || l.website.trim() === '');
-    }
-    if (filterMode === 'has-website') {
-      return leads.filter(l => Boolean(l.website && l.website.trim().length > 3));
-    }
-    if (filterMode === 'meetings') {
-      return leads.filter(l => l.stage === 'Meeting Scheduled' || l.stage === 'Proposal Sent' || l.stage === 'Negotiation');
-    }
-    if (filterMode === 'won') {
-      return leads.filter(l => l.stage === 'Won');
-    }
+  // Counts for tabs
+  const countNoWebsite = useMemo(() => leads.filter(l => !l.website || l.website.trim() === '').length, [leads]);
+  const countHasWebsite = useMemo(() => leads.filter(l => Boolean(l.website && l.website.trim().length > 3)).length, [leads]);
+  const countMeetings = useMemo(() => leads.filter(l => l.stage === 'Meeting Scheduled' || l.stage === 'Proposal Sent' || l.stage === 'Negotiation').length, [leads]);
+  const countWon = useMemo(() => leads.filter(l => l.stage === 'Won').length, [leads]);
+  const totalPipelineValue = useMemo(() => leads.reduce((acc, l) => acc + (l.value || 10000), 0), [leads]);
+
+  // Primary Segment Filter
+  const segmentFiltered = useMemo(() => {
+    if (filterMode === 'no-website') return leads.filter(l => !l.website || l.website.trim() === '');
+    if (filterMode === 'has-website') return leads.filter(l => Boolean(l.website && l.website.trim().length > 3));
+    if (filterMode === 'meetings') return leads.filter(l => l.stage === 'Meeting Scheduled' || l.stage === 'Proposal Sent' || l.stage === 'Negotiation');
+    if (filterMode === 'won') return leads.filter(l => l.stage === 'Won');
     return leads;
   }, [leads, filterMode]);
 
-  // Search & Secondary Filter
+  // Search & Secondary Filters
   const displayedLeads = useMemo(() => {
-    return categoryFilteredLeads.filter(l => {
+    return segmentFiltered.filter(l => {
       const q = search.toLowerCase().trim();
       const matchesSearch = !q || 
         (l.company || '').toLowerCase().includes(q) || 
@@ -123,22 +118,18 @@ export function LeadsPage() {
       const matchesIndustry = industryFilter === 'All' || (l.industry || '') === industryFilter;
       return matchesSearch && matchesRep && matchesCity && matchesIndustry;
     });
-  }, [categoryFilteredLeads, search, selectedRep, cityFilter, industryFilter]);
+  }, [segmentFiltered, search, selectedRep, cityFilter, industryFilter]);
 
-  // Paginated slice for smooth mobile DOM performance
   const paginatedLeads = useMemo(() => {
     return displayedLeads.slice(0, visibleCount);
   }, [displayedLeads, visibleCount]);
 
-  const hasActiveFilters = search !== '' || selectedRep !== 'All' || cityFilter !== 'All' || industryFilter !== 'All' || filterMode !== 'all';
+  const hasSecondaryFilters = selectedRep !== 'All' || cityFilter !== 'All' || industryFilter !== 'All';
 
-  const resetAllFilters = () => {
-    setSearch('');
+  const resetSecondaryFilters = () => {
     setSelectedRep('All');
     setCityFilter('All');
     setIndustryFilter('All');
-    setFilterMode('all');
-    setVisibleCount(30);
   };
 
   const handleCreateLead = (e: React.FormEvent) => {
@@ -198,297 +189,233 @@ export function LeadsPage() {
     'Meeting Scheduled': 'bg-amber-50 text-amber-800 border-amber-200',
     'Proposal Sent': 'bg-purple-50 text-purple-700 border-purple-200',
     'Negotiation': 'bg-pink-50 text-pink-700 border-pink-200',
-    'Won': 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    'Lost': 'bg-rose-50 text-rose-700 border-rose-200',
+    'Won': 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold',
+    'Lost': 'bg-rose-50 text-rose-700 border-rose-200'
   };
 
-  // Metrics
-  const countNoWebsite = useMemo(() => leads.filter(l => !l.website || l.website.trim() === '').length, [leads]);
-  const countHasWebsite = useMemo(() => leads.filter(l => Boolean(l.website && l.website.trim().length > 3)).length, [leads]);
-  const countMeetings = useMemo(() => leads.filter(l => l.stage === 'Meeting Scheduled' || l.stage === 'Proposal Sent' || l.stage === 'Negotiation').length, [leads]);
-  const countWon = useMemo(() => leads.filter(l => l.stage === 'Won').length, [leads]);
-  const totalPipelineValue = useMemo(() => leads.reduce((acc, l) => acc + (l.value || 10000), 0), [leads]);
-
   return (
-    <div className="space-y-6 max-w-7xl mx-auto w-full pb-20 md:pb-6">
-      {/* Top Header & Fast Actions */}
+    <div className="space-y-5 max-w-7xl mx-auto w-full pb-20 md:pb-6">
+      {/* Sleek Top Bar: Title, Pipeline Value & Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-              Pipeline & Commercial Deals
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              Pipeline
             </h1>
+            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+              {leads.length} accounts · ₹{(totalPipelineValue / 100000).toFixed(1)}L value
+            </span>
             <button
               onClick={handleRefresh}
               disabled={isRefreshing || isLoadingCloud}
-              title="Re-fetch from Supabase Cloud"
-              className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-slate-100 transition-all active:scale-95"
+              title="Refresh from cloud"
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
             >
-              <RefreshCw className={`w-4 h-4 ${isRefreshing || isLoadingCloud ? 'animate-spin text-blue-600' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing || isLoadingCloud ? 'animate-spin text-blue-600' : ''}`} />
             </button>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Verified Indian SMB offices and boutique firms. Call directly, update stages, and close deals in real time.
+            Verified Indian SMB accounts and target business profiles.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
-          <Link
-            to="/scraper"
-            className="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-sm active:scale-[0.98]"
-          >
-            <Compass className="w-3.5 h-3.5 text-indigo-600" /> Run Scraper
-          </Link>
-
+        <div className="flex items-center gap-2">
           <button
             onClick={handleExportCSV}
-            className="px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all shadow-sm"
+            className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-colors shadow-2xs"
           >
-            <Download className="w-3.5 h-3.5" /> Export
+            <Download className="w-3.5 h-3.5 text-slate-400" /> Export
           </button>
           
           <button
             onClick={() => setOpenModal(true)}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-md shadow-blue-500/20 active:scale-[0.98]"
+            className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all shadow-xs active:scale-98"
           >
-            <Plus className="w-4 h-4" /> Add Prospect
+            <Plus className="w-3.5 h-3.5" /> Add Prospect
           </button>
         </div>
       </div>
 
-      {/* High-Impact KPI Snapshot Bar */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <button
-          onClick={() => { setFilterMode('no-website'); setVisibleCount(30); }}
-          className={`p-4 rounded-2xl border text-left transition-all shadow-xs ${
-            filterMode === 'no-website'
-              ? 'bg-amber-50 border-amber-300 ring-2 ring-amber-400/20'
-              : 'bg-white border-slate-200 hover:bg-slate-50'
-          }`}
-        >
-          <div className="flex items-center justify-between text-amber-700">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Needs Website</span>
-            <Flame className="w-4 h-4 text-amber-500" />
-          </div>
-          <p className="text-2xl font-black text-slate-900 mt-1">{countNoWebsite}</p>
-          <span className="text-[11px] text-amber-700 font-semibold mt-0.5 block">Hot Outbound Prospects</span>
-        </button>
-
-        <button
-          onClick={() => { setFilterMode('has-website'); setVisibleCount(30); }}
-          className={`p-4 rounded-2xl border text-left transition-all shadow-xs ${
-            filterMode === 'has-website'
-              ? 'bg-indigo-50 border-indigo-300 ring-2 ring-indigo-400/20'
-              : 'bg-white border-slate-200 hover:bg-slate-50'
-          }`}
-        >
-          <div className="flex items-center justify-between text-indigo-700">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Has Website</span>
-            <Globe className="w-4 h-4 text-indigo-500" />
-          </div>
-          <p className="text-2xl font-black text-slate-900 mt-1">{countHasWebsite}</p>
-          <span className="text-[11px] text-indigo-600 font-semibold mt-0.5 block">2026 Redesign Targets</span>
-        </button>
-
-        <button
-          onClick={() => { setFilterMode('meetings'); setVisibleCount(30); }}
-          className={`p-4 rounded-2xl border text-left transition-all shadow-xs ${
-            filterMode === 'meetings'
-              ? 'bg-purple-50 border-purple-300 ring-2 ring-purple-400/20'
-              : 'bg-white border-slate-200 hover:bg-slate-50'
-          }`}
-        >
-          <div className="flex items-center justify-between text-purple-700">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Demos & Meetings</span>
-            <Calendar className="w-4 h-4 text-purple-500" />
-          </div>
-          <p className="text-2xl font-black text-slate-900 mt-1">{countMeetings}</p>
-          <span className="text-[11px] text-purple-600 font-semibold mt-0.5 block">In Active Negotiation</span>
-        </button>
-
-        <div className="p-4 rounded-2xl border bg-white border-slate-200 text-left shadow-xs">
-          <div className="flex items-center justify-between text-blue-700">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Total Pipeline</span>
-            <TrendingUp className="w-4 h-4 text-blue-500" />
-          </div>
-          <p className="text-2xl font-black text-slate-900 mt-1">
-            ₹{(totalPipelineValue / 100000).toFixed(1)} Lakh
-          </p>
-          <span className="text-[11px] text-slate-500 font-semibold mt-0.5 block">
-            {leads.length} Accounts @ ₹10k Standard
-          </span>
-        </div>
-      </div>
-
-      {/* Primary Category Tabs & View Switcher */}
-      <div className="flex items-center justify-between gap-2 border-b border-slate-200 pb-2 overflow-x-auto no-scrollbar">
-        <div className="flex items-center gap-1.5 min-w-max">
-          <button
-            onClick={() => { setFilterMode('all'); setVisibleCount(30); }}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              filterMode === 'all' 
-                ? 'bg-slate-900 text-white shadow-sm' 
-                : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            All Accounts ({leads.length})
-          </button>
-          
-          <button
-            onClick={() => { setFilterMode('no-website'); setVisibleCount(30); }}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-              filterMode === 'no-website' 
-                ? 'bg-amber-600 text-white shadow-sm' 
-                : 'bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100'
-            }`}
-          >
-            <Flame className="w-3.5 h-3.5 text-amber-500" />
-            Needs Website ({countNoWebsite})
-          </button>
-
-          <button
-            onClick={() => { setFilterMode('has-website'); setVisibleCount(30); }}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              filterMode === 'has-website' 
-                ? 'bg-blue-600 text-white shadow-sm' 
-                : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Has Website ({countHasWebsite})
-          </button>
-
-          <button
-            onClick={() => { setFilterMode('meetings'); setVisibleCount(30); }}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              filterMode === 'meetings' 
-                ? 'bg-purple-600 text-white shadow-sm' 
-                : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Demos & Meetings ({countMeetings})
-          </button>
-
-          <button
-            onClick={() => { setFilterMode('won'); setVisibleCount(30); }}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              filterMode === 'won' 
-                ? 'bg-emerald-600 text-white shadow-sm' 
-                : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Closed Won ({countWon})
-          </button>
-        </div>
-
-        {/* View Switcher: Table vs Cards */}
-        <div className="hidden md:flex items-center gap-1 p-1 bg-slate-100 border border-slate-200 rounded-xl">
-          <button
-            onClick={() => setViewMode('table')}
-            className={`p-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 ${
-              viewMode === 'table' ? 'bg-white text-slate-900 shadow-sm font-bold' : 'text-slate-500'
-            }`}
-            title="High-Density Table View"
-          >
-            <List className="w-4 h-4" /> Table
-          </button>
-          <button
-            onClick={() => setViewMode('grid')}
-            className={`p-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 ${
-              viewMode === 'grid' ? 'bg-white text-slate-900 shadow-sm font-bold' : 'text-slate-500'
-            }`}
-            title="Spacious Cards Grid View"
-          >
-            <Grid className="w-4 h-4" /> Cards
-          </button>
-        </div>
-      </div>
-
-      {/* Secondary Search & Dropdown Filters Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
-        {/* Search Input */}
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search by business, advocate, doctor, phone number, city, or sector..."
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setVisibleCount(30); }}
-            className="w-full pl-10 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-          />
-          {search && (
+      {/* Unified Toolbar: Segment Filters + Search + Secondary Filters + View Toggle */}
+      <div className="space-y-2">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
+          {/* Segment Pills */}
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-1 lg:pb-0">
             <button
-              onClick={() => setSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+              onClick={() => { setFilterMode('all'); setVisibleCount(30); }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors whitespace-nowrap ${
+                filterMode === 'all'
+                  ? 'bg-slate-900 text-white font-semibold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
             >
-              <X className="w-3.5 h-3.5" />
+              All ({leads.length})
             </button>
-          )}
-        </div>
-
-        {/* Secondary Filter Dropdowns */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0">
-          <select
-            value={cityFilter}
-            onChange={(e) => { setCityFilter(e.target.value); setVisibleCount(30); }}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none"
-          >
-            <option value="All">All Cities</option>
-            {cities.filter(c => c !== 'All').map(c => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-
-          <select
-            value={industryFilter}
-            onChange={(e) => { setIndustryFilter(e.target.value); setVisibleCount(30); }}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none max-w-[180px] truncate"
-          >
-            <option value="All">All Industries</option>
-            {industries.filter(i => i !== 'All').map(i => (
-              <option key={i} value={i}>{i}</option>
-            ))}
-          </select>
-
-          <select
-            value={selectedRep}
-            onChange={(e) => { setSelectedRep(e.target.value); setVisibleCount(30); }}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none"
-          >
-            <option value="All">All Reps</option>
-            {TEAM_MEMBERS.map(m => (
-              <option key={m.id} value={m.id}>{m.name}</option>
-            ))}
-          </select>
-
-          {hasActiveFilters && (
             <button
-              onClick={resetAllFilters}
-              className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition-colors shrink-0 flex items-center gap-1"
+              onClick={() => { setFilterMode('no-website'); setVisibleCount(30); }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+                filterMode === 'no-website'
+                  ? 'bg-amber-600 text-white font-semibold'
+                  : 'text-amber-700 hover:bg-amber-50'
+              }`}
             >
-              <X className="w-3 h-3" /> Reset
+              <Flame className="w-3 h-3 text-amber-500" /> Needs Web ({countNoWebsite})
             </button>
-          )}
+            <button
+              onClick={() => { setFilterMode('has-website'); setVisibleCount(30); }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors whitespace-nowrap ${
+                filterMode === 'has-website'
+                  ? 'bg-slate-900 text-white font-semibold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              Has Web ({countHasWebsite})
+            </button>
+            <button
+              onClick={() => { setFilterMode('meetings'); setVisibleCount(30); }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors whitespace-nowrap ${
+                filterMode === 'meetings'
+                  ? 'bg-slate-900 text-white font-semibold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              Demos ({countMeetings})
+            </button>
+            <button
+              onClick={() => { setFilterMode('won'); setVisibleCount(30); }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors whitespace-nowrap ${
+                filterMode === 'won'
+                  ? 'bg-emerald-600 text-white font-semibold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              Won ({countWon})
+            </button>
+          </div>
+
+          {/* Search, Filter Toggle & View Switcher */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1 lg:w-64">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search accounts, names, cities..."
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setVisibleCount(30); }}
+                className="w-full pl-8 pr-7 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 transition-colors"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`px-2.5 py-1.5 border rounded-xl text-xs font-medium flex items-center gap-1.5 transition-colors ${
+                hasSecondaryFilters || showFilters
+                  ? 'bg-blue-50 border-blue-200 text-blue-700 font-semibold'
+                  : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Filters</span>
+              {hasSecondaryFilters && <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>}
+            </button>
+
+            {/* View Mode Toggle */}
+            <div className="flex items-center bg-white border border-slate-200 rounded-xl p-0.5 shrink-0">
+              <button
+                onClick={() => setViewMode('table')}
+                className={`p-1.5 rounded-lg text-xs transition-colors ${
+                  viewMode === 'table' ? 'bg-slate-100 text-slate-900' : 'text-slate-400 hover:text-slate-600'
+                }`}
+                title="Table view"
+              >
+                <List className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded-lg text-xs transition-colors ${
+                  viewMode === 'grid' ? 'bg-slate-100 text-slate-900' : 'text-slate-400 hover:text-slate-600'
+                }`}
+                title="Cards grid view"
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
         </div>
+
+        {/* Expandable Filter Drawer */}
+        {showFilters && (
+          <div className="p-3 bg-white border border-slate-200 rounded-2xl flex flex-wrap items-center gap-2.5 text-xs animate-fade-in shadow-2xs">
+            <span className="font-semibold text-slate-500 uppercase text-[10px] tracking-wider">Refine:</span>
+            
+            <select
+              value={cityFilter}
+              onChange={(e) => { setCityFilter(e.target.value); setVisibleCount(30); }}
+              className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 font-medium focus:outline-none"
+            >
+              <option value="All">All Cities</option>
+              {cities.filter(c => c !== 'All').map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+
+            <select
+              value={industryFilter}
+              onChange={(e) => { setIndustryFilter(e.target.value); setVisibleCount(30); }}
+              className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 font-medium focus:outline-none max-w-[200px] truncate"
+            >
+              <option value="All">All Industries</option>
+              {industries.filter(i => i !== 'All').map(i => (
+                <option key={i} value={i}>{i}</option>
+              ))}
+            </select>
+
+            <select
+              value={selectedRep}
+              onChange={(e) => { setSelectedRep(e.target.value); setVisibleCount(30); }}
+              className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 font-medium focus:outline-none"
+            >
+              <option value="All">All Sales Reps</option>
+              {TEAM_MEMBERS.map(m => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+            </select>
+
+            {hasSecondaryFilters && (
+              <button
+                onClick={resetSecondaryFilters}
+                className="text-xs text-blue-600 hover:underline font-semibold ml-auto"
+              >
+                Reset filters
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Main Content Area: High-Density Table or Rich Grid */}
+      {/* Main View: High-Clarity Table or Clean Cards */}
       {viewMode === 'table' ? (
         <div className="space-y-4">
-          {/* Desktop Full-Width Table View (>= 768px) */}
-          <div className="hidden md:block bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50/90 text-slate-600 font-bold uppercase text-[10px]">
-                    <th className="py-3 px-4">Business & Practice</th>
-                    <th className="py-3 px-3">Decision Maker</th>
-                    <th className="py-3 px-3">Phone</th>
-                    <th className="py-3 px-3">City & Sector</th>
-                    <th className="py-3 px-3">Web Presence</th>
-                    <th className="py-3 px-3">Outreach Strategy</th>
-                    <th className="py-3 px-3">Deal Stage</th>
-                    <th className="py-3 px-3">Rep</th>
-                    <th className="py-3 px-4 text-right">Outreach</th>
+                  <tr className="border-b border-slate-200/80 bg-slate-50/75 text-slate-500 font-bold uppercase text-[10px] tracking-wider">
+                    <th className="py-2.5 px-4 font-semibold">Account / Practice</th>
+                    <th className="py-2.5 px-3 font-semibold">Contact Person</th>
+                    <th className="py-2.5 px-3 font-semibold">Direct Phone</th>
+                    <th className="py-2.5 px-3 font-semibold">Location</th>
+                    <th className="py-2.5 px-3 font-semibold">Web Presence</th>
+                    <th className="py-2.5 px-3 font-semibold">Stage</th>
+                    <th className="py-2.5 px-4 text-right font-semibold">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -499,60 +426,58 @@ export function LeadsPage() {
                     return (
                       <tr 
                         key={lead.id} 
-                        className="hover:bg-slate-50/90 transition-colors group"
+                        className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
+                        onClick={() => setDetailLead(lead)}
                       >
-                        <td className="py-3 px-4 font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
-                          <div className="truncate max-w-[220px]" title={lead.company}>{lead.company}</div>
-                          <div className="text-[10px] text-slate-400 font-normal">Standard Deal: ₹{(lead.value || 10000).toLocaleString('en-IN')}</div>
+                        <td className="py-3 px-4">
+                          <span className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors block truncate max-w-[240px]">
+                            {lead.company}
+                          </span>
+                          <span className="text-[11px] text-slate-400 block truncate max-w-[240px]">
+                            {lead.industry}
+                          </span>
                         </td>
 
-                        <td className="py-3 px-3 text-slate-700 font-semibold truncate max-w-[170px]" title={lead.contactPerson}>
-                          {lead.contactPerson || 'Decision Maker'}
+                        <td className="py-3 px-3 text-slate-700 font-medium">
+                          <span className="truncate block max-w-[160px]">{lead.contactPerson || 'Decision Maker'}</span>
                         </td>
 
-                        <td className="py-3 px-3 font-semibold text-slate-900 whitespace-nowrap">
+                        <td className="py-3 px-3 font-medium text-slate-800 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                           <a 
                             href={`tel:${cleanPhone}`} 
-                            className="hover:text-emerald-700 flex items-center gap-1.5"
+                            className="hover:text-emerald-700 flex items-center gap-1.5 text-slate-700 font-semibold"
                           >
-                            <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                            <Phone className="w-3 h-3 text-emerald-600" />
                             {lead.phone}
                           </a>
                         </td>
 
-                        <td className="py-3 px-3">
-                          <span className="font-semibold text-slate-800">{lead.city}</span>
-                          <span className="text-[10px] text-slate-400 block truncate max-w-[130px]">{lead.industry}</span>
+                        <td className="py-3 px-3 text-slate-600 whitespace-nowrap">
+                          {lead.city}
                         </td>
 
-                        <td className="py-3 px-3">
+                        <td className="py-3 px-3" onClick={(e) => e.stopPropagation()}>
                           {hasWeb ? (
                             <a 
                               href={lead.website!.startsWith('http') ? lead.website : `https://${lead.website}`} 
                               target="_blank" 
                               rel="noreferrer"
-                              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100"
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
                             >
-                              <Globe className="w-2.5 h-2.5" /> Has Website
+                              <Globe className="w-2.5 h-2.5 text-slate-500" /> Web
                             </a>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                              <Flame className="w-2.5 h-2.5 text-amber-500" /> Needs Website
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                              <Flame className="w-2.5 h-2.5 text-amber-500" /> Needs Web
                             </span>
                           )}
                         </td>
 
-                        <td className="py-3 px-3 max-w-[200px]">
-                          <span className="text-[11px] text-slate-600 font-medium truncate block" title={lead.nextFollowUp}>
-                            {lead.nextFollowUp || 'Pitch Web Design & Google Business Optimization'}
-                          </span>
-                        </td>
-
-                        <td className="py-3 px-3">
+                        <td className="py-3 px-3" onClick={(e) => e.stopPropagation()}>
                           <select
                             value={lead.stage}
                             onChange={(e) => updateLeadStage(lead.id, e.target.value as LeadStage)}
-                            className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border focus:outline-none cursor-pointer ${stageColorMap[lead.stage] || 'bg-slate-50 text-slate-700'}`}
+                            className={`px-2 py-1 rounded-lg text-[11px] font-medium border focus:outline-none cursor-pointer ${stageColorMap[lead.stage] || 'bg-slate-50 text-slate-700'}`}
                           >
                             {STAGES.map(s => (
                               <option key={s} value={s}>{s}</option>
@@ -560,22 +485,10 @@ export function LeadsPage() {
                           </select>
                         </td>
 
-                        <td className="py-3 px-3">
-                          <select
-                            value={lead.assignedTo || 'swaroop'}
-                            onChange={(e) => assignLead(lead.id, e.target.value)}
-                            className="px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-slate-50 border border-slate-200 text-slate-700 focus:outline-none capitalize"
-                          >
-                            {TEAM_MEMBERS.map(m => (
-                              <option key={m.id} value={m.id}>{m.name}</option>
-                            ))}
-                          </select>
-                        </td>
-
-                        <td className="py-3 px-4 text-right">
+                        <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                           <a
                             href={`tel:${cleanPhone}`}
-                            className="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow-sm shadow-emerald-600/20 active:scale-95 transition-all"
+                            className="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-2.5 py-1 rounded-lg text-xs shadow-2xs active:scale-95 transition-all"
                           >
                             <Phone className="w-3 h-3" /> Call
                           </a>
@@ -588,106 +501,21 @@ export function LeadsPage() {
             </div>
           </div>
 
-          {/* Mobile Card Deck (< 768px) */}
-          <div className="md:hidden space-y-3.5">
-            {paginatedLeads.map((lead) => {
-              const hasWeb = Boolean(lead.website && lead.website.trim().length > 3);
-              const cleanPhone = (lead.phone || '').split('/')[0].replace(/[^0-9+]/g, '');
-
-              return (
-                <div
-                  key={lead.id}
-                  className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-sm space-y-3.5 transition-all hover:border-slate-300"
-                >
-                  {/* Top Line: Company & Web Status */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-bold text-slate-900 text-base leading-snug truncate">
-                        {lead.company}
-                      </h3>
-                      <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
-                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span className="font-semibold text-slate-700">{lead.city}</span>
-                        <span>•</span>
-                        <span className="truncate">{lead.industry}</span>
-                      </div>
-                    </div>
-
-                    {hasWeb ? (
-                      <a
-                        href={lead.website!.startsWith('http') ? lead.website : `https://${lead.website}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 shrink-0 hover:bg-indigo-100"
-                      >
-                        <Globe className="w-2.5 h-2.5" /> Has Web
-                      </a>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 shrink-0">
-                        <Flame className="w-2.5 h-2.5 text-amber-500" /> Needs Web
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Decision Maker & Retainer Value */}
-                  <div className="bg-slate-50 rounded-xl p-3 flex items-center justify-between text-xs border border-slate-100">
-                    <div className="flex items-center gap-2 truncate pr-2">
-                      <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 font-extrabold flex items-center justify-center text-[10px] shrink-0">
-                        {(lead.contactPerson || 'D').charAt(0).toUpperCase()}
-                      </div>
-                      <span className="font-bold text-slate-800 truncate">{lead.contactPerson || 'Decision Maker'}</span>
-                    </div>
-                    <span className="font-extrabold text-slate-900 shrink-0 text-sm">
-                      ₹{(lead.value || 10000).toLocaleString('en-IN')}
-                    </span>
-                  </div>
-
-                  {/* Action Pitch Hook */}
-                  <div className="bg-blue-50/70 border border-blue-100/90 rounded-xl p-2.5 text-xs flex items-center gap-2 text-blue-900">
-                    <Sparkles className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                    <span className="font-medium truncate">{lead.nextFollowUp || 'Pitch Web Design & Google Business Optimization'}</span>
-                  </div>
-
-                  {/* Tactile Action Footer */}
-                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100">
-                    <select
-                      value={lead.stage}
-                      onChange={(e) => updateLeadStage(lead.id, e.target.value as LeadStage)}
-                      className={`px-3 py-2 rounded-xl text-xs font-bold border focus:outline-none flex-1 max-w-[160px] ${stageColorMap[lead.stage] || 'bg-slate-50 text-slate-700'}`}
-                    >
-                      {STAGES.map(s => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </select>
-
-                    <a
-                      href={`tel:${cleanPhone}`}
-                      className="flex-1 py-2 px-4 bg-emerald-600 active:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 active:scale-95 transition-all text-center"
-                    >
-                      <Phone className="w-4 h-4" /> Call {cleanPhone.substring(0, 10)}
-                    </a>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Pagination Controls */}
           {displayedLeads.length > visibleCount && (
             <div className="text-center pt-2">
               <button
                 onClick={() => setVisibleCount(prev => prev + 30)}
-                className="px-6 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 shadow-sm transition-all active:scale-95"
+                className="px-5 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 shadow-2xs transition-colors"
               >
-                Load Next 30 Prospects (Showing {visibleCount} of {displayedLeads.length})
+                Load next 30 (Showing {visibleCount} of {displayedLeads.length})
               </button>
             </div>
           )}
         </div>
       ) : (
-        /* Rich Desktop Card Grid View */
+        /* Clean Cards Grid View (No Nested Cards) */
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
             {paginatedLeads.map((lead) => {
               const hasWeb = Boolean(lead.website && lead.website.trim().length > 3);
               const cleanPhone = (lead.phone || '').split('/')[0].replace(/[^0-9+]/g, '');
@@ -695,59 +523,55 @@ export function LeadsPage() {
               return (
                 <div
                   key={lead.id}
-                  className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs hover:shadow-md hover:border-blue-200 transition-all flex flex-col justify-between space-y-3"
+                  onClick={() => setDetailLead(lead)}
+                  className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs hover:border-slate-300 hover:shadow-xs transition-all flex flex-col justify-between space-y-3 cursor-pointer group"
                 >
                   <div className="space-y-2">
+                    {/* Top Row: Business Name & Web Pill */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
-                        <h3 className="font-bold text-slate-900 text-sm leading-snug truncate" title={lead.company}>
+                        <h3 className="font-semibold text-slate-900 text-sm leading-snug truncate group-hover:text-blue-600 transition-colors">
                           {lead.company}
                         </h3>
-                        <div className="flex items-center gap-1 text-[11px] text-slate-500 mt-0.5">
-                          <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                          <span className="font-semibold text-slate-700">{lead.city}</span>
-                          <span>•</span>
-                          <span className="truncate">{lead.industry}</span>
-                        </div>
+                        <p className="text-xs text-slate-500 truncate mt-0.5">
+                          {lead.city} · {lead.industry}
+                        </p>
                       </div>
 
                       {hasWeb ? (
-                        <a
-                          href={lead.website!.startsWith('http') ? lead.website : `https://${lead.website}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 shrink-0 hover:bg-indigo-100"
-                        >
-                          <Globe className="w-2.5 h-2.5" /> Has Web
-                        </a>
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-100 text-slate-600 shrink-0">
+                          Has Web
+                        </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 shrink-0">
-                          <Flame className="w-2.5 h-2.5 text-amber-500" /> Needs Web
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 shrink-0">
+                          Needs Web
                         </span>
                       )}
                     </div>
 
-                    <div className="bg-slate-50 rounded-xl p-2.5 flex items-center justify-between text-xs border border-slate-100">
-                      <div className="flex items-center gap-2 truncate pr-2">
+                    {/* Contact Person */}
+                    <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100">
+                      <div className="flex items-center gap-1.5 text-slate-700 truncate">
                         <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span className="font-medium text-slate-800 truncate">{lead.contactPerson || 'Decision Maker'}</span>
+                        <span className="font-medium truncate">{lead.contactPerson || 'Decision Maker'}</span>
                       </div>
-                      <span className="font-extrabold text-slate-900 shrink-0">
+                      <span className="font-bold text-slate-900 shrink-0">
                         ₹{(lead.value || 10000).toLocaleString('en-IN')}
                       </span>
                     </div>
 
-                    <div className="bg-blue-50/70 border border-blue-100/90 rounded-xl p-2 text-xs flex items-center gap-1.5 text-blue-900">
-                      <Sparkles className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                      <span className="font-medium truncate">{lead.nextFollowUp || 'Pitch Web Design & Google Business Optimization'}</span>
+                    {/* Pitch Strategy Hook */}
+                    <div className="text-xs text-slate-600 pl-2 border-l-2 border-blue-500 italic py-0.5 line-clamp-2">
+                      "{lead.nextFollowUp || 'Pitch High-Converting Appointment & Web Presence'}"
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                  {/* Card Actions Footer */}
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
                     <select
                       value={lead.stage}
                       onChange={(e) => updateLeadStage(lead.id, e.target.value as LeadStage)}
-                      className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold border focus:outline-none flex-1 max-w-[140px] ${stageColorMap[lead.stage] || 'bg-slate-50 text-slate-700'}`}
+                      className={`px-2 py-1 rounded-lg text-[11px] font-medium border focus:outline-none flex-1 max-w-[130px] ${stageColorMap[lead.stage] || 'bg-slate-50 text-slate-700'}`}
                     >
                       {STAGES.map(s => (
                         <option key={s} value={s}>{s}</option>
@@ -756,9 +580,9 @@ export function LeadsPage() {
 
                     <a
                       href={`tel:${cleanPhone}`}
-                      className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm shadow-emerald-600/20 active:scale-95 transition-all"
+                      className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg text-xs flex items-center gap-1.5 shadow-2xs active:scale-95 transition-all"
                     >
-                      <Phone className="w-3.5 h-3.5" /> Call
+                      <Phone className="w-3 h-3" /> Call
                     </a>
                   </div>
                 </div>
@@ -770,14 +594,131 @@ export function LeadsPage() {
             <div className="text-center pt-2">
               <button
                 onClick={() => setVisibleCount(prev => prev + 30)}
-                className="px-6 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 shadow-sm transition-all"
+                className="px-5 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 shadow-2xs transition-colors"
               >
-                Load Next 30 Prospects (Showing {visibleCount} of {displayedLeads.length})
+                Load next 30 (Showing {visibleCount} of {displayedLeads.length})
               </button>
             </div>
           )}
         </div>
       )}
+
+      {/* Quick Prospect Details Modal */}
+      <Dialog.Root open={Boolean(detailLead)} onOpenChange={(open) => !open && setDetailLead(null)}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 animate-fade-in" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-3xl p-6 w-[92vw] max-w-lg shadow-2xl z-50 border border-slate-200 animate-scale-in">
+            {detailLead && (
+              <div className="space-y-4 text-xs">
+                <div className="flex items-start justify-between border-b border-slate-100 pb-3">
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900">{detailLead.company}</h2>
+                    <p className="text-slate-500 mt-0.5">{detailLead.city} · {detailLead.industry}</p>
+                  </div>
+                  <Dialog.Close className="p-1 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100">
+                    <X className="w-5 h-5" />
+                  </Dialog.Close>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 py-1">
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Decision Maker</span>
+                    <span className="font-semibold text-slate-900 text-sm">{detailLead.contactPerson || 'Decision Maker'}</span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Target Retainer</span>
+                    <span className="font-semibold text-slate-900 text-sm">₹{(detailLead.value || 10000).toLocaleString('en-IN')}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Outreach Hook</span>
+                  <div className="p-3 rounded-xl bg-blue-50 text-blue-900 font-medium">
+                    {detailLead.nextFollowUp || 'Pitch High-Converting Appointment & Web Presence'}
+                  </div>
+                </div>
+
+                <div className="space-y-2 pt-2 border-t border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-slate-700">Phone:</span>
+                    <a 
+                      href={`tel:${detailLead.phone}`}
+                      className="font-bold text-emerald-600 hover:underline flex items-center gap-1 text-sm"
+                    >
+                      <Phone className="w-3.5 h-3.5" /> {detailLead.phone}
+                    </a>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-slate-700">Website:</span>
+                    {detailLead.website ? (
+                      <a 
+                        href={detailLead.website.startsWith('http') ? detailLead.website : `https://${detailLead.website}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-blue-600 hover:underline flex items-center gap-1 font-medium truncate max-w-[200px]"
+                      >
+                        <Globe className="w-3 h-3" /> {detailLead.website}
+                      </a>
+                    ) : (
+                      <span className="text-amber-700 font-medium">None (Hot Lead)</span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-slate-700">Stage:</span>
+                    <select
+                      value={detailLead.stage}
+                      onChange={(e) => {
+                        const newStage = e.target.value as LeadStage;
+                        updateLeadStage(detailLead.id, newStage);
+                        setDetailLead({ ...detailLead, stage: newStage });
+                      }}
+                      className="px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-semibold text-slate-800"
+                    >
+                      {STAGES.map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-slate-700">Assigned Rep:</span>
+                    <select
+                      value={detailLead.assignedTo || 'swaroop'}
+                      onChange={(e) => {
+                        const newRep = e.target.value;
+                        assignLead(detailLead.id, newRep);
+                        setDetailLead({ ...detailLead, assignedTo: newRep });
+                      }}
+                      className="px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-semibold text-slate-800 capitalize"
+                    >
+                      {TEAM_MEMBERS.map(m => (
+                        <option key={m.id} value={m.id}>{m.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-slate-100 flex gap-2">
+                  <a
+                    href={`tel:${detailLead.phone}`}
+                    className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-center flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <Phone className="w-4 h-4" /> Call Now
+                  </a>
+                  <button
+                    onClick={() => setDetailLead(null)}
+                    className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
 
       {/* Add Lead Modal */}
       <Dialog.Root open={openModal} onOpenChange={setOpenModal}>
@@ -785,15 +726,15 @@ export function LeadsPage() {
           <Dialog.Overlay className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 animate-fade-in" />
           <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-3xl p-6 w-[92vw] max-w-lg shadow-2xl z-50 border border-slate-200 animate-scale-in">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-              <Dialog.Title className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <Plus className="w-5 h-5 text-blue-600" /> Add Commercial Prospect
+              <Dialog.Title className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Plus className="w-4 h-4 text-blue-600" /> New Prospect
               </Dialog.Title>
               <Dialog.Close className="p-1 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100">
                 <X className="w-5 h-5" />
               </Dialog.Close>
             </div>
 
-            <form onSubmit={handleCreateLead} className="space-y-3.5 text-xs">
+            <form onSubmit={handleCreateLead} className="space-y-3 text-xs">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Company / Practice Name</label>
                 <input
@@ -894,9 +835,9 @@ export function LeadsPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md shadow-blue-500/20 transition-all"
+                  className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-xs transition-colors"
                 >
-                  Create Prospect
+                  Save Prospect
                 </button>
               </div>
             </form>
@@ -906,3 +847,4 @@ export function LeadsPage() {
     </div>
   );
 }
+export default LeadsPage;

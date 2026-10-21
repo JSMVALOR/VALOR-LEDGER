@@ -1,351 +1,174 @@
-import { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   TrendingUp, 
   Users, 
   Calendar, 
-  CheckCircle2, 
-  ArrowUpRight, 
-  PhoneCall, 
-  Sparkles, 
-  Building2, 
-  Clock, 
   Phone, 
-  ShieldCheck, 
   ChevronRight,
   Flame,
   Globe,
-  Plus
+  Plus,
+  Clock,
+  ArrowRight
 } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useStore, TEAM_MEMBERS } from '../../lib/store';
 
 export function DashboardCharts() {
-  const { leads, activities, currentUser, tasks, toggleTask, updateLeadStage } = useStore();
+  const { leads, activities, currentUser } = useStore();
 
   // Metrics
   const totalLeads = leads.length;
   const totalValue = leads.reduce((sum, l) => sum + (l.value || 0), 0);
-  const formattedPipeline = `₹${(totalValue / 1000).toLocaleString('en-IN', { maximumFractionDigits: 1 })}k`;
+  const formattedPipeline = `₹${(totalValue / 100000).toFixed(1)}L`;
 
   const reachableLeads = leads.filter(l => l.phone && l.phone !== 'N/A');
-  const meetingsScheduled = leads.filter(l => l.stage === 'Meeting Scheduled');
+  const meetingsScheduled = leads.filter(l => l.stage === 'Meeting Scheduled' || l.stage === 'Proposal Sent');
   const wonLeads = leads.filter(l => l.stage === 'Won');
   const wonValue = wonLeads.reduce((sum, l) => sum + (l.value || 0), 0);
-  const formattedWonValue = `₹${(wonValue / 1000).toLocaleString('en-IN', { maximumFractionDigits: 1 })}k`;
 
-  // Leads without website (highest priority for website sales)
+  // Hot leads needing websites
   const leadsNeedingWebsite = useMemo(() => {
     return leads.filter(l => !l.website || l.website.trim() === '');
   }, [leads]);
 
-  // Priority Outbound Queue (top 4 leads to call right now)
-  const priorityCallQueue = useMemo(() => {
-    return leads
+  // Priority immediate call queue (top 4 uncontacted hot leads)
+  const priorityQueue = useMemo(() => {
+    return leadsNeedingWebsite
       .filter(l => l.stage === 'New' || l.stage === 'Contacted')
-      .slice(0, 4);
+      .slice(0, 5);
+  }, [leadsNeedingWebsite]);
+
+  // Stage distribution funnel
+  const stageCounts = useMemo(() => {
+    const map: Record<string, number> = {
+      New: 0,
+      Contacted: 0,
+      Qualified: 0,
+      'Meeting Scheduled': 0,
+      Won: 0,
+    };
+    leads.forEach(l => {
+      if (map[l.stage] !== undefined) map[l.stage]++;
+    });
+    return map;
   }, [leads]);
 
-  // Monthly revenue forecast
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const currentMonthIdx = new Date().getMonth();
-  const monthlyDataMap = new Map<string, number>();
-
-  for (let i = 5; i >= 0; i--) {
-    let m = currentMonthIdx - i;
-    if (m < 0) m += 12;
-    monthlyDataMap.set(months[m], 0);
-  }
-
-  leads.forEach(l => {
-    const d = new Date(l.createdAt);
-    const mName = months[d.getMonth()];
-    if (monthlyDataMap.has(mName)) {
-      monthlyDataMap.set(mName, (monthlyDataMap.get(mName) || 0) + (l.value || 0));
-    }
-  });
-
-  const chartData = Array.from(monthlyDataMap.entries()).map(([month, val]) => ({
-    month,
-    value: val,
-  }));
-
-  const userDisplayName = currentUser?.name || currentUser?.username || 'Sales Rep';
+  const userDisplayName = currentUser?.name || currentUser?.username || 'Team Member';
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto w-full pb-20 md:pb-6">
-      {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-6 sm:p-7 text-white shadow-lg shadow-blue-500/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Executive Welcome Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
         <div>
-          <div className="flex items-center gap-2 text-blue-100 font-semibold text-xs tracking-wider uppercase mb-1.5">
-            <Sparkles className="w-4 h-4 text-amber-300" /> Sales Intelligence Center
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-            Welcome back, {userDisplayName}! 👋
+          <h1 className="text-xl font-bold tracking-tight text-slate-900">
+            Welcome back, {userDisplayName}
           </h1>
-          <p className="text-sm text-blue-100 mt-1 max-w-xl">
-            You have <b className="text-white font-bold">{leadsNeedingWebsite.length} prospects</b> without a verified website waiting for immediate pitch outreach.
+          <p className="text-xs text-slate-500 mt-0.5">
+            You have <span className="font-semibold text-amber-700">{leadsNeedingWebsite.length} businesses</span> without a website primed for outreach today.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+        <div className="flex items-center gap-2">
           <Link
             to="/easy-contact"
-            className="px-4 py-2.5 rounded-2xl bg-white text-blue-700 hover:bg-blue-50 font-bold text-xs shadow-md transition-all active:scale-[0.98] flex items-center gap-2"
+            className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition-colors flex items-center gap-1.5"
           >
             <Phone className="w-3.5 h-3.5" /> Start Speed Dial
           </Link>
           <Link
             to="/leads"
-            className="px-4 py-2.5 rounded-2xl bg-blue-700/60 hover:bg-blue-700 text-white font-bold text-xs border border-white/20 transition-all flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors flex items-center gap-1.5"
           >
-            <Plus className="w-3.5 h-3.5" /> New Deal
+            View Pipeline <ChevronRight className="w-3.5 h-3.5" />
           </Link>
         </div>
       </div>
 
-      {/* Top 4 KPI Metrics */}
+      {/* 4 Core KPI Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Metric 1 */}
-        <div className="bg-white border border-slate-200/80 p-4 sm:p-5 rounded-2xl shadow-sm flex flex-col justify-between">
-          <div className="flex justify-between items-start">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center font-bold">
-              <TrendingUp className="w-5 h-5" />
-            </div>
-            <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-0.5">
-              <ArrowUpRight className="w-3 h-3" /> Active
-            </span>
+        <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-2xs space-y-1">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+            <span>Pipeline Value</span>
+            <TrendingUp className="w-4 h-4 text-blue-600" />
           </div>
-          <div className="mt-4">
-            <p className="text-xs font-semibold text-slate-500">Total Pipeline Value</p>
-            <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 mt-0.5">{formattedPipeline}</h3>
-            <p className="text-[11px] text-slate-400 mt-0.5">{totalLeads} prospects in pipeline</p>
-          </div>
+          <p className="text-2xl font-bold text-slate-900">{formattedPipeline}</p>
+          <p className="text-[11px] text-slate-400">{totalLeads} total accounts</p>
         </div>
 
         {/* Metric 2 */}
-        <div className="bg-white border border-slate-200/80 p-4 sm:p-5 rounded-2xl shadow-sm flex flex-col justify-between">
-          <div className="flex justify-between items-start">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center font-bold">
-              <Users className="w-5 h-5" />
-            </div>
-            <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full">
-              Dial Ready
-            </span>
+        <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-2xs space-y-1">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+            <span>Needs Website</span>
+            <Flame className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="mt-4">
-            <p className="text-xs font-semibold text-slate-500">Reachable Leads</p>
-            <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 mt-0.5">{reachableLeads.length}</h3>
-            <p className="text-[11px] text-slate-400 mt-0.5">Verified phone numbers</p>
-          </div>
+          <p className="text-2xl font-bold text-amber-600">{leadsNeedingWebsite.length}</p>
+          <p className="text-[11px] text-slate-400">Prime web development targets</p>
         </div>
 
         {/* Metric 3 */}
-        <div className="bg-white border border-slate-200/80 p-4 sm:p-5 rounded-2xl shadow-sm flex flex-col justify-between">
-          <div className="flex justify-between items-start">
-            <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 text-amber-600 flex items-center justify-center font-bold">
-              <Calendar className="w-5 h-5" />
-            </div>
-            <span className="text-[11px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full flex items-center gap-0.5">
-              <Flame className="w-3 h-3" /> Demos
-            </span>
+        <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-2xs space-y-1">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+            <span>Direct Phone Numbers</span>
+            <Phone className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="mt-4">
-            <p className="text-xs font-semibold text-slate-500">Meetings Booked</p>
-            <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 mt-0.5">{meetingsScheduled.length}</h3>
-            <p className="text-[11px] text-slate-400 mt-0.5">Scheduled client presentations</p>
-          </div>
+          <p className="text-2xl font-bold text-slate-900">{reachableLeads.length}</p>
+          <p className="text-[11px] text-slate-400">100% verified Indian contacts</p>
         </div>
 
         {/* Metric 4 */}
-        <div className="bg-white border border-slate-200/80 p-4 sm:p-5 rounded-2xl shadow-sm flex flex-col justify-between">
-          <div className="flex justify-between items-start">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-            <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-              {wonLeads.length} Won
-            </span>
+        <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-2xs space-y-1">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+            <span>Meetings & Demos</span>
+            <Calendar className="w-4 h-4 text-purple-600" />
           </div>
-          <div className="mt-4">
-            <p className="text-xs font-semibold text-slate-500">Closed Revenue</p>
-            <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 mt-0.5">{formattedWonValue}</h3>
-            <p className="text-[11px] text-slate-400 mt-0.5">Collected contract revenue</p>
-          </div>
+          <p className="text-2xl font-bold text-slate-900">{meetingsScheduled.length}</p>
+          <p className="text-[11px] text-slate-400">In negotiation</p>
         </div>
       </div>
 
-      {/* Main Grid: Priority Call Queue & Revenue Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Priority Outbound Calling Queue */}
-        <div className="bg-white border border-slate-200/80 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-                  <PhoneCall className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-sm">Quick Call Queue</h3>
-                  <p className="text-[11px] text-slate-400">Top prospects ready to dial</p>
-                </div>
-              </div>
-              <Link to="/easy-contact" className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-0.5">
-                Full Queue <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
-            <div className="space-y-2.5">
-              {priorityCallQueue.map(lead => {
-                const cleanPhone = (lead.phone || '').split('/')[0].replace(/[^0-9+]/g, '');
-                const hasWebsite = Boolean(lead.website && lead.website.trim().length > 3);
-
-                return (
-                  <div key={lead.id} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-2 hover:border-blue-300 transition-all">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <h4 className="font-bold text-slate-900 text-sm truncate">{lead.company}</h4>
-                        <p className="text-xs text-slate-500 truncate">{lead.contactPerson || 'Decision Maker'} • {lead.city}</p>
-                      </div>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
-                        hasWebsite ? 'bg-slate-200 text-slate-700' : 'bg-amber-100 text-amber-800'
-                      }`}>
-                        {hasWebsite ? 'Has Web' : 'Needs Website'}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-1 text-xs">
-                      <span className="text-[11px] text-slate-400">
-                        Rep: <b className="text-slate-700 capitalize">{lead.assignedTo || 'swaroop'}</b>
-                      </span>
-
-                      {lead.phone && lead.phone !== 'N/A' ? (
-                        <a
-                          href={`tel:${cleanPhone}`}
-                          onClick={() => updateLeadStage(lead.id, 'Contacted')}
-                          className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1 shadow-sm transition-all"
-                        >
-                          <Phone className="w-3 h-3" /> Call
-                        </a>
-                      ) : (
-                        <span className="text-slate-400 text-xs">No Phone</span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {priorityCallQueue.length === 0 && (
-                <div className="py-8 text-center text-xs text-slate-400">
-                  All priority leads have been contacted!
-                </div>
-              )}
-            </div>
-          </div>
-
-          <Link
-            to="/easy-contact"
-            className="w-full mt-4 py-2.5 rounded-xl bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 font-bold text-xs text-center transition-all flex items-center justify-center gap-1.5"
-          >
-            <span>Open Speed Dial Mode</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-
-        {/* Right Column: Pipeline Generation Velocity Chart */}
-        <div className="lg:col-span-2 bg-white border border-slate-200/80 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="font-bold text-slate-900 text-base">Pipeline Growth Velocity</h3>
-              <p className="text-xs text-slate-400">Prospective new contract pipeline (INR)</p>
-            </div>
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700 border border-slate-200">
-              Last 6 Months
-            </span>
-          </div>
-
-          <div className="h-[220px] sm:h-[260px] w-full mt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="dashVel" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#2563EB" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#2563EB" stopOpacity={0.0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="month" stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `₹${v / 1000}k`} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #E2E8F0', boxShadow: '0 4px 16px rgba(0,0,0,0.06)' }}
-                  formatter={(val: any) => [`₹${(Number(val) || 0).toLocaleString('en-IN')}`, 'Pipeline']}
-                />
-                <Area type="monotone" dataKey="value" stroke="#2563EB" strokeWidth={2.5} fillOpacity={1} fill="url(#dashVel)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="pt-3 border-t border-slate-100 grid grid-cols-3 gap-2 text-center text-xs">
-            <div>
-              <p className="text-slate-400 font-medium">Standard Deal</p>
-              <p className="font-bold text-slate-800 text-sm mt-0.5">₹10,000</p>
-            </div>
-            <div>
-              <p className="text-slate-400 font-medium">Outreach Pace</p>
-              <p className="font-bold text-blue-600 text-sm mt-0.5">High Velocity</p>
-            </div>
-            <div>
-              <p className="text-slate-400 font-medium">Website Need Rate</p>
-              <p className="font-bold text-emerald-600 text-sm mt-0.5">
-                {totalLeads > 0 ? Math.round((leadsNeedingWebsite.length / totalLeads) * 100) : 0}%
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Grid: Team Leaderboard & Live Action Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Team Leaderboard */}
-        <div className="bg-white border border-slate-200/80 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">
+      {/* Main Split: Immediate Call Queue (Left) & Pipeline Funnel (Right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* Priority Outbound Queue (2 Cols) */}
+        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-blue-600" />
-              <h3 className="font-bold text-slate-900 text-sm">Team Roster & Performance</h3>
+            <div>
+              <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <Flame className="w-4 h-4 text-amber-500" /> Immediate Call Focus
+              </h2>
+              <p className="text-xs text-slate-400">High-priority accounts without a verified website</p>
             </div>
-            <Link to="/leads" className="text-xs font-bold text-blue-600 hover:underline">
-              View All Pipeline
+            <Link to="/easy-contact" className="text-xs font-semibold text-blue-600 hover:underline">
+              Open Speed Dial →
             </Link>
           </div>
 
-          <div className="space-y-3">
-            {TEAM_MEMBERS.map(member => {
-              const repLeads = leads.filter(l => l.assignedTo === member.id);
-              const contacted = repLeads.filter(l => l.stage !== 'New').length;
-              const won = repLeads.filter(l => l.stage === 'Won').length;
-              const contactRate = repLeads.length > 0 ? Math.round((contacted / repLeads.length) * 100) : 0;
+          <div className="divide-y divide-slate-100">
+            {priorityQueue.map(lead => {
+              const cleanPhone = (lead.phone || '').split('/')[0].replace(/[^0-9+]/g, '');
 
               return (
-                <div key={member.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white font-extrabold flex items-center justify-center text-sm shadow-sm shrink-0">
-                      {member.avatar}
-                    </div>
-                    <div className="min-w-0">
-                      <h4 className="font-bold text-slate-900 text-sm truncate">{member.name}</h4>
-                      <p className="text-xs text-slate-500 font-medium truncate">{member.role}</p>
-                    </div>
+                <div key={lead.id} className="py-3 flex items-center justify-between gap-3 group">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-semibold text-slate-900 text-xs truncate">
+                      {lead.company}
+                    </h3>
+                    <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                      {lead.contactPerson || 'Decision Maker'} · {lead.city} · {lead.industry}
+                    </p>
                   </div>
 
-                  <div className="flex items-center gap-4 text-right shrink-0">
-                    <div>
-                      <p className="text-xs font-bold text-slate-900">{repLeads.length} Leads</p>
-                      <p className="text-[11px] text-blue-600 font-semibold">{contactRate}% Contacted</p>
-                    </div>
-                    <div className="hidden sm:block">
-                      <p className="text-xs font-bold text-emerald-600">₹{(won * 10).toFixed(0)}k Won</p>
-                      <span className="text-[10px] text-slate-400 font-medium">Closed deals</span>
-                    </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[11px] font-semibold text-slate-400 hidden sm:inline">
+                      ₹{(lead.value || 10000).toLocaleString('en-IN')}
+                    </span>
+                    <a
+                      href={`tel:${cleanPhone}`}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors shadow-2xs"
+                    >
+                      <Phone className="w-3 h-3" /> Call
+                    </a>
                   </div>
                 </div>
               );
@@ -353,44 +176,114 @@ export function DashboardCharts() {
           </div>
         </div>
 
-        {/* Live System Activity Ticker */}
-        <div className="bg-white border border-slate-200/80 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4 flex flex-col justify-between">
+        {/* Pipeline Stage Distribution Funnel (1 Col) */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4 flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-blue-600" />
-                <h3 className="font-bold text-slate-900 text-sm">Live System Action Stream</h3>
-              </div>
-              <span className="text-[11px] text-slate-400 font-medium">Real-Time Events</span>
+            <div className="pb-3 border-b border-slate-100">
+              <h2 className="text-sm font-bold text-slate-900">Pipeline Funnel</h2>
+              <p className="text-xs text-slate-400">Deal distribution across stages</p>
             </div>
 
-            <div className="space-y-2.5 max-h-[280px] overflow-y-auto pr-1">
-              {activities.slice(0, 6).map(act => (
-                <div key={act.id} className="p-3 rounded-2xl bg-slate-50 border border-slate-200/60 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs shrink-0">
-                      {act.user ? act.user.charAt(0) : 'S'}
+            <div className="space-y-3 mt-4">
+              {Object.entries(stageCounts).map(([stage, count]) => {
+                const pct = totalLeads > 0 ? Math.round((count / totalLeads) * 100) : 0;
+                return (
+                  <div key={stage} className="space-y-1">
+                    <div className="flex items-center justify-between text-xs font-medium">
+                      <span className="text-slate-700">{stage}</span>
+                      <span className="text-slate-500 font-semibold">{count} ({pct}%)</span>
                     </div>
-                    <div className="min-w-0">
-                      <p className="font-medium text-slate-800 truncate">
-                        <span className="font-bold text-blue-600">{act.user}</span> {act.action}
-                      </p>
-                      <p className="text-[11px] text-slate-500 font-semibold truncate">{act.target}</p>
+                    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full ${stage === 'Won' ? 'bg-emerald-500' : stage === 'Meeting Scheduled' ? 'bg-purple-500' : 'bg-blue-600'}`}
+                        style={{ width: `${Math.max(pct, 2)}%` }}
+                      />
                     </div>
                   </div>
-                  <span className="text-[10px] text-slate-400 shrink-0 font-medium">{act.time}</span>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-slate-100 text-center">
+            <Link to="/leads" className="text-xs font-semibold text-blue-600 hover:underline">
+              Inspect Full Pipeline Matrix →
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Grid: Team Roster & Real-time Action Stream */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Team Roster */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-3">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-blue-600" />
+              <h2 className="text-sm font-bold text-slate-900">Team Roster</h2>
+            </div>
+            <span className="text-xs text-slate-400">{TEAM_MEMBERS.length} active reps</span>
+          </div>
+
+          <div className="space-y-2">
+            {TEAM_MEMBERS.map(member => {
+              const repLeads = leads.filter(l => l.assignedTo === member.id);
+              const contacted = repLeads.filter(l => l.stage !== 'New').length;
+              const contactRate = repLeads.length > 0 ? Math.round((contacted / repLeads.length) * 100) : 0;
+
+              return (
+                <div key={member.id} className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-xs shrink-0">
+                      {member.avatar}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-slate-900 truncate">{member.name}</p>
+                      <p className="text-[11px] text-slate-400 capitalize">{member.role}</p>
+                    </div>
+                  </div>
+
+                  <div className="text-right shrink-0">
+                    <span className="font-semibold text-slate-800">{repLeads.length} leads</span>
+                    <span className="text-[11px] text-slate-400 block">{contactRate}% contacted</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Action Stream / Audit Ticker */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-3 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-blue-600" />
+                <h2 className="text-sm font-bold text-slate-900">Recent Activity</h2>
+              </div>
+              <span className="text-xs text-slate-400">Live events</span>
+            </div>
+
+            <div className="space-y-2 mt-3 max-h-[220px] overflow-y-auto no-scrollbar">
+              {activities.slice(0, 5).map(act => (
+                <div key={act.id} className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs">
+                  <div className="min-w-0 flex-1 pr-2">
+                    <p className="font-medium text-slate-800 truncate">
+                      <span className="font-semibold text-slate-900">{act.user}</span> {act.action}
+                    </p>
+                    <p className="text-[11px] text-slate-400 truncate">{act.target}</p>
+                  </div>
+                  <span className="text-[10px] text-slate-400 shrink-0">{act.time}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <Link
-            to="/settings"
-            className="w-full mt-3 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold text-xs text-center transition-all flex items-center justify-center gap-1.5"
-          >
-            <span>View Full Audit Log in Settings</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </Link>
+          <div className="pt-3 border-t border-slate-100 text-right">
+            <Link to="/settings" className="text-xs font-semibold text-blue-600 hover:underline">
+              View Audit Logs in Settings →
+            </Link>
+          </div>
         </div>
       </div>
     </div>

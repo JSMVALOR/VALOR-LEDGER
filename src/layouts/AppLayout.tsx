@@ -7,21 +7,19 @@ import {
   Calendar, 
   CheckSquare, 
   Settings, 
-  Plus, 
   Phone, 
   ChevronLeft, 
   ChevronRight, 
-  AlertCircle,
   LogOut,
   Compass
 } from 'lucide-react';
 
 import ValorLogo from '../components/shared/ValorLogo';
-import { useStore, TEAM_MEMBERS } from '../lib/store';
+import { useStore } from '../lib/store';
 
 export default function AppLayout() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const { currentUser, logout, leads, incompleteLeads, tasks, isCloudSynced, isLoadingCloud } = useStore();
+  const { currentUser, logout, leads, tasks, isCloudSynced, isLoadingCloud } = useStore();
   const location = useLocation();
 
   const isSuperadmin = currentUser?.role === 'superadmin';
@@ -83,39 +81,34 @@ export default function AppLayout() {
         )}
         
         {/* Navigation Categories */}
-        <nav className="flex-1 flex flex-col gap-4 overflow-y-auto no-scrollbar pr-0.5">
+        <nav className="flex-1 flex flex-col gap-5 overflow-y-auto no-scrollbar pr-0.5">
           {/* Main Pipeline Section */}
           <div className="space-y-1">
             {!isSidebarCollapsed && (
               <p className="px-3.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                Sales Engine
+                Pipeline & Sourcing
               </p>
             )}
             <NavItem to="/" icon={Home} label="Dashboard" />
             <NavItem to="/leads" icon={Users} label="Pipeline & Deals" badge={leads.length} />
-            <NavItem to="/easy-contact" icon={Phone} label="Speed Dial" badge="Dialer" badgeColor="bg-amber-100 text-amber-800" />
-            <NavItem to="/scraper" icon={Compass} label="Lead Scraper" badge="AI Scan" badgeColor="bg-indigo-100 text-indigo-800" />
+            <NavItem to="/easy-contact" icon={Phone} label="Speed Dial" />
+            <NavItem to="/scraper" icon={Compass} label="Lead Scraper" />
           </div>
 
-          {/* Account Intelligence Section */}
+          {/* Management & Execution Section */}
           <div className="space-y-1">
             {!isSidebarCollapsed && (
               <p className="px-3.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                Accounts & Roster
+                Workspace
               </p>
             )}
             <NavItem to="/companies" icon={Briefcase} label="Target Companies" />
-            <NavItem to="/incomplete-leads" icon={AlertCircle} label="Unverified Contacts" badge={incompleteLeads.length} badgeColor="bg-amber-50 text-amber-700" />
-          </div>
-
-          {/* Execution Section */}
-          <div className="space-y-1">
-            {!isSidebarCollapsed && (
-              <p className="px-3.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                Execution
-              </p>
-            )}
-            <NavItem to="/tasks" icon={CheckSquare} label="Action Items" badge={tasks.filter(t => !t.completed).length} />
+            <NavItem 
+              to="/tasks" 
+              icon={CheckSquare} 
+              label="Action Items" 
+              badge={tasks.filter(t => !t.completed).length > 0 ? tasks.filter(t => !t.completed).length : undefined} 
+            />
             <NavItem to="/calendar" icon={Calendar} label="Meetings Schedule" />
           </div>
         </nav>
@@ -133,23 +126,12 @@ export default function AppLayout() {
           <div className="flex items-center gap-2">
             <ValorLogo className="scale-75 origin-left" />
           </div>
-          <div className="flex items-center gap-2">
-            <div className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-              isCloudSynced 
-                ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                : 'bg-amber-50 text-amber-700 border-amber-200'
-            }`}>
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
               <span className={`w-1.5 h-1.5 rounded-full ${isCloudSynced ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`}></span>
-              {isCloudSynced ? 'Supabase Live' : isLoadingCloud ? 'Syncing...' : 'Cached'}
+              <span>{isCloudSynced ? 'Live' : 'Syncing'}</span>
             </div>
-            <Link 
-              to="/scraper" 
-              className="p-1.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center justify-center font-bold text-xs"
-              title="Lead Scraper"
-            >
-              <Compass className="w-4 h-4" />
-            </Link>
-            <Link to="/settings" className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
+            <Link to="/settings" className="w-7 h-7 rounded-full bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center font-bold text-xs">
               {((currentUser?.name || currentUser?.username || 'V').substring(0, 1)).toUpperCase()}
             </Link>
           </div>
@@ -158,56 +140,40 @@ export default function AppLayout() {
         {/* Desktop Topbar */}
         <header className="h-14 border-b border-slate-200/80 bg-white/90 backdrop-blur-md flex items-center justify-between px-6 z-10 hidden md:flex">
           <div className="text-xs text-slate-400 flex items-center gap-2 font-medium">
-            <span className="font-bold text-slate-900">VALOR CRM</span>
-            <span>/</span>
-            <span className="capitalize text-slate-600">
+            <span className="font-bold text-slate-800">VALOR</span>
+            <span className="text-slate-300">/</span>
+            <span className="capitalize text-slate-600 font-semibold">
               {location.pathname === '/' ? 'Command Center' : location.pathname.substring(1).replace('-', ' ')}
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* Supabase Cloud Live Status Pill */}
-            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all ${
-              isCloudSynced 
-                ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                : 'bg-amber-50 text-amber-700 border-amber-200'
-            }`}>
+          <div className="flex items-center gap-4">
+            {/* Supabase Cloud Live Status */}
+            <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
               <span className={`w-2 h-2 rounded-full ${isCloudSynced ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`}></span>
-              {isCloudSynced ? 'Supabase Live Cloud' : isLoadingCloud ? 'Syncing Cloud...' : 'Cached Mode'}
+              <span>{isCloudSynced ? 'Supabase Live' : isLoadingCloud ? 'Syncing...' : 'Cached'}</span>
             </div>
 
-            <Link
-              to="/scraper"
-              className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm active:scale-[0.98] transition-all"
-            >
-              <Compass className="w-3.5 h-3.5 text-indigo-600" /> Run Scraper
-            </Link>
+            <div className="h-4 w-px bg-slate-200" />
 
-            <Link
-              to="/leads"
-              className="bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-blue-500/20 active:scale-[0.98] transition-all"
-            >
-              <Plus className="w-3.5 h-3.5" /> Add Prospect
-            </Link>
-
-            <div className="flex items-center gap-2.5 pl-3 border-l border-slate-200">
+            <div className="flex items-center gap-2.5">
               <div className="flex flex-col items-end">
                 <span className="text-xs font-bold text-slate-900 leading-none">
                   {currentUser?.name || currentUser?.username || 'Team User'}
                 </span>
-                <span className="text-[10px] font-bold text-blue-600 uppercase mt-0.5">
+                <span className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">
                   {currentUser?.role || 'user'}
                 </span>
               </div>
 
-              <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
+              <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center font-bold text-xs">
                 {((currentUser?.name || currentUser?.username || 'V').substring(0, 2)).toUpperCase()}
               </div>
 
               <button
                 onClick={logout}
                 title="Sign Out"
-                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors ml-1"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors ml-0.5"
               >
                 <LogOut className="w-4 h-4" />
               </button>

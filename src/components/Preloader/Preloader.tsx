@@ -18,17 +18,13 @@ const Preloader = ({ onComplete }: { onComplete?: () => void }) => {
 
         
         
-        const fillTimer = setTimeout(() => setPhase('filling'), 1500);
-
-        
-        const zoomTimer = setTimeout(() => setPhase('zooming'), 2200);
-
-        
+        const fillTimer = setTimeout(() => setPhase('filling'), 250);
+        const zoomTimer = setTimeout(() => setPhase('zooming'), 550);
         const completeTimer = setTimeout(() => {
             sessionStorage.setItem('jsm_preloader_played', 'true');
             setPhase('done');
             if (onComplete) onComplete();
-        }, 3000);
+        }, 800);
 
         return () => {
             clearTimeout(fillTimer);
