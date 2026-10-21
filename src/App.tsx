@@ -18,6 +18,7 @@ import { Calendar } from './features/Calendar/Calendar';
 import { Tasks } from './features/Tasks/Tasks';
 import { EasyContact } from './features/EasyContact/EasyContact';
 import { ProcessedLeads } from './features/ProcessedLeads/ProcessedLeads';
+import { LeadScraper } from './features/Scraper/LeadScraper';
 
 function MainRouter() {
   const { currentUser } = useStore();
@@ -38,6 +39,7 @@ function MainRouter() {
           <Route path="tasks" element={<Tasks />} />
           <Route path="settings" element={<Settings />} />
           <Route path="easy-contact" element={<EasyContact />} />
+          <Route path="scraper" element={<LeadScraper />} />
           <Route path="processed-leads" element={<ProcessedLeads />} />
           {/* Catch-all redirect to dashboard */}
           <Route path="*" element={<Navigate to="/" replace />} />

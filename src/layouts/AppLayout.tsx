@@ -18,7 +18,8 @@ import {
   X,
   LogOut,
   Flame,
-  ShieldCheck
+  ShieldCheck,
+  Compass
 } from 'lucide-react';
 
 import ValorLogo from '../components/shared/ValorLogo';
@@ -247,6 +248,7 @@ export default function AppLayout() {
             <NavItem to="/" icon={Home} label="Dashboard" />
             <NavItem to="/leads" icon={Users} label="Pipeline & Deals" badge={leads.length} />
             <NavItem to="/easy-contact" icon={Phone} label="Speed Dial" badge="Dialer" badgeColor="bg-amber-100 text-amber-800" />
+            <NavItem to="/scraper" icon={Compass} label="Lead Scraper" badge="AI Scan" badgeColor="bg-indigo-100 text-indigo-800" />
           </div>
 
           {/* Account Intelligence Section */}
@@ -294,6 +296,13 @@ export default function AppLayout() {
               <span className={`w-1.5 h-1.5 rounded-full ${isCloudSynced ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`}></span>
               {isCloudSynced ? 'Supabase Live' : isLoadingCloud ? 'Syncing...' : 'Cached'}
             </div>
+            <Link 
+              to="/scraper" 
+              className="p-1.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center justify-center font-bold text-xs"
+              title="Lead Scraper"
+            >
+              <Compass className="w-4 h-4" />
+            </Link>
             <Link to="/settings" className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
               {((currentUser?.name || currentUser?.username || 'V').substring(0, 1)).toUpperCase()}
             </Link>
@@ -320,6 +329,13 @@ export default function AppLayout() {
               <span className={`w-2 h-2 rounded-full ${isCloudSynced ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`}></span>
               {isCloudSynced ? 'Supabase Live Cloud' : isLoadingCloud ? 'Syncing Cloud...' : 'Cached Mode'}
             </div>
+
+            <Link
+              to="/scraper"
+              className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm active:scale-[0.98] transition-all"
+            >
+              <Compass className="w-3.5 h-3.5 text-indigo-600" /> Run Scraper
+            </Link>
 
             <Link
               to="/leads"

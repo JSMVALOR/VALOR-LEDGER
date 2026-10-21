@@ -162,6 +162,7 @@ type StoreContextType = {
   allLeads: Lead[];
   incompleteLeads: Lead[];
   addLead: (lead: Omit<Lead, 'id' | 'createdAt'>) => void;
+  addLeadsBatch: (leads: Omit<Lead, 'id' | 'createdAt'>[]) => Promise<Lead[]>;
   updateLeadStage: (id: string, stage: LeadStage) => void;
   assignLead: (id: string, rep: string) => void;
   updateLead: (id: string, updates: Partial<Lead>) => void;
@@ -523,6 +524,28 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const addLeadsBatch = async (newLeadsData: Omit<Lead, 'id' | 'createdAt'>[]): Promise<Lead[]> => {
+    const defaultRep = currentUser ? currentUser.username : 'swaroop';
+    const newLeads: Lead[] = newLeadsData.map((l, idx) => ({
+      ...l,
+      id: Math.random().toString(36).substr(2, 9),
+      createdAt: Date.now() - (idx * 500),
+      assignedTo: l.assignedTo || defaultRep,
+    }));
+
+    setLeads(prev => [...newLeads, ...prev]);
+    logActivity('Batch Lead Scrape:', `Discovered & integrated ${newLeads.length} new prospects into pipeline`);
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from('leads').insert(newLeads);
+      } catch (err) {
+        console.error('Supabase batch insert error:', err);
+      }
+    }
+    return newLeads;
+  };
+
   const updateLeadStage = (id: string, stage: LeadStage) => {
     setLeads(prev => prev.map(l => {
       if (l.id === id) {
@@ -643,6 +666,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       allLeads: leads,
       incompleteLeads,
       addLead,
+      addLeadsBatch,
       updateLeadStage,
       assignLead,
       updateLead,

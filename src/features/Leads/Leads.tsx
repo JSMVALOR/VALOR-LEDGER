@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   Plus, 
   Search, 
@@ -10,14 +11,15 @@ import {
   Calendar, 
   CheckCircle2, 
   X, 
-  Globe,
-  Sparkles,
-  MapPin,
-  Building2,
-  ExternalLink,
-  ChevronRight,
-  Flame,
-  AlertTriangle
+  Globe, 
+  Sparkles, 
+  MapPin, 
+  Building2, 
+  ExternalLink, 
+  ChevronRight, 
+  Flame, 
+  AlertTriangle,
+  Compass
 } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useStore, TEAM_MEMBERS, type Lead, type LeadStage, type Priority } from '../../lib/store';
@@ -174,6 +176,13 @@ export function LeadsPage() {
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
+          <Link
+            to="/scraper"
+            className="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-sm active:scale-[0.98]"
+          >
+            <Compass className="w-3.5 h-3.5 text-indigo-600" /> Run Scraper
+          </Link>
+
           <button
             onClick={handleExportCSV}
             className="px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all shadow-sm"
