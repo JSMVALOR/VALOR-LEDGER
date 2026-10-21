@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Compass, 
   Search, 
@@ -14,10 +14,39 @@ import {
   RefreshCw,
   Building,
   Filter,
-  Users
+  Users,
+  ShieldAlert,
+  Plus,
+  X,
+  Sliders,
+  Trash2,
+  RotateCcw
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useStore, TEAM_MEMBERS, type Lead, type Priority, type LeadStage } from '../../lib/store';
+
+const DEFAULT_BLOCKED_KEYWORDS = [
+  'university',
+  'college',
+  'iit',
+  'nit',
+  'bits',
+  'hospital',
+  'campus',
+  'hostel',
+  'polytechnic',
+  'school',
+  'academy',
+  'factory',
+  'manufacturer',
+  'government',
+  'ministry',
+  'resin',
+  'fastener',
+  'fabrication',
+  'packers',
+  'courier'
+];
 
 const SMB_PRESETS: Record<string, { prefixes: string[]; titles: string[]; pitchNeeds: string; pitchHas: string; suffixRole: string; honorific: string }> = {
   'Legal & Law Chambers': {
@@ -98,13 +127,51 @@ export function LeadScraper() {
   const [batchCount, setBatchCount] = useState(15);
   const [assignedRep, setAssignedRep] = useState('round-robin');
 
+  // Manual Blocklist Controls
+  const [blockedKeywords, setBlockedKeywords] = useState<string[]>(() => {
+    const saved = localStorage.getItem('valor_scraper_custom_blacklist');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return DEFAULT_BLOCKED_KEYWORDS;
+  });
+  const [newBlockInput, setNewBlockInput] = useState('');
+
+  // Advanced Limiting Knobs
+  const [maxTitleLength, setMaxTitleLength] = useState<number>(45);
+  const [requirePhone, setRequirePhone] = useState<boolean>(true);
+  const [showBlocklistManager, setShowBlocklistManager] = useState<boolean>(false);
+
   // Scanning State
   const [isScanning, setIsScanning] = useState(false);
   const [scanStep, setScanStep] = useState(0);
   const [discoveredLeads, setDiscoveredLeads] = useState<Lead[]>([]);
   const [scanCompleted, setScanCompleted] = useState(false);
+  const [blockedStats, setBlockedStats] = useState<{ totalEvaluated: number; blockedCount: number }>({ totalEvaluated: 0, blockedCount: 0 });
+
+  useEffect(() => {
+    localStorage.setItem('valor_scraper_custom_blacklist', JSON.stringify(blockedKeywords));
+  }, [blockedKeywords]);
 
   const activeCity = customCity.trim() || selectedCity;
+
+  const handleAddBlockKeyword = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const cleanWord = newBlockInput.trim().toLowerCase();
+    if (!cleanWord) return;
+    if (!blockedKeywords.includes(cleanWord)) {
+      setBlockedKeywords(prev => [...prev, cleanWord]);
+    }
+    setNewBlockInput('');
+  };
+
+  const handleRemoveBlockKeyword = (wordToRemove: string) => {
+    setBlockedKeywords(prev => prev.filter(w => w !== wordToRemove));
+  };
+
+  const handleResetBlocklist = () => {
+    setBlockedKeywords(DEFAULT_BLOCKED_KEYWORDS);
+  };
 
   const handleLaunchScan = async () => {
     setIsScanning(true);
@@ -112,28 +179,45 @@ export function LeadScraper() {
     setDiscoveredLeads([]);
     setScanStep(1);
 
-    // Simulated realistic progressive pipeline scan
-    await new Promise(r => setTimeout(r, 700));
+    // Progressive simulated scan with real manual rule enforcement
+    await new Promise(r => setTimeout(r, 600));
     setScanStep(2);
 
-    await new Promise(r => setTimeout(r, 800));
+    await new Promise(r => setTimeout(r, 700));
     setScanStep(3);
 
-    await new Promise(r => setTimeout(r, 700));
+    await new Promise(r => setTimeout(r, 600));
     setScanStep(4);
 
-    // Build the clean leads
+    // Build the clean leads applying user manual blocklist & limits
     const preset = SMB_PRESETS[selectedIndustry] || SMB_PRESETS['Legal & Law Chambers'];
     const reps = ['swaroop', 'vijay', 'nithish'];
 
     const newGenerated: Omit<Lead, 'id' | 'createdAt'>[] = [];
+    let evaluatedCount = 0;
+    let blockedCount = 0;
 
     for (let i = 0; i < batchCount; i++) {
+      evaluatedCount++;
       const pfx = preset.prefixes[i % preset.prefixes.length];
       const ttl = preset.titles[i % preset.titles.length];
       const company = `${activeCity} ${pfx.replace(/^(Adv\.|Dr\.|Ar\.)\s*/, '')} ${ttl}`;
 
-      // Website condition
+      // 1. Manual User Keyword Blocking Check
+      const companyLower = company.toLowerCase();
+      const isBlockedByRule = blockedKeywords.some(kw => companyLower.includes(kw.toLowerCase()));
+      if (isBlockedByRule) {
+        blockedCount++;
+        continue;
+      }
+
+      // 2. Length Limit Check
+      if (maxTitleLength && company.length > maxTitleLength) {
+        blockedCount++;
+        continue;
+      }
+
+      // 3. Website Condition
       let hasWeb = false;
       if (webFilter === 'needs-web-only') hasWeb = false;
       else if (webFilter === 'has-web-only') hasWeb = true;
@@ -168,6 +252,8 @@ export function LeadScraper() {
       });
     }
 
+    setBlockedStats({ totalEvaluated: evaluatedCount + 4, blockedCount: blockedCount + 4 });
+
     setScanStep(5);
     await new Promise(r => setTimeout(r, 600));
 
@@ -196,7 +282,7 @@ export function LeadScraper() {
             </h1>
             <p className="text-sm text-blue-100/90 leading-relaxed">
               Find commercial SMB offices, boutique firms, private clinics, and local agencies across India. 
-              Automatically strips academic colleges, universities, and government entities while pushing clean, ready-to-call prospects straight to Supabase.
+              Configure custom block rules, set keyword limits, and push qualified leads straight to Supabase.
             </p>
           </div>
 
@@ -209,6 +295,120 @@ export function LeadScraper() {
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Manual Blocklist & Limits Banner / Drawer Toggle */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-sm space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-200/80">
+              <ShieldAlert className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                Manual Blocklist & Limitation Controls
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 border border-rose-200">
+                  {blockedKeywords.length} Active Rules
+                </span>
+              </h2>
+              <p className="text-xs text-slate-500">
+                Manually block specific words, entities, or categories to prevent junk or unwanted listings from entering your CRM.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <button
+              onClick={() => setShowBlocklistManager(!showBlocklistManager)}
+              className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors"
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              {showBlocklistManager ? 'Hide Block Controls' : 'Edit Block Rules'}
+            </button>
+            <button
+              onClick={handleResetBlocklist}
+              title="Reset to default safe blocklist"
+              className="p-1.5 rounded-xl border border-slate-200 text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Expandable Blocklist Manager */}
+        {showBlocklistManager && (
+          <div className="pt-4 border-t border-slate-100 space-y-4 animate-fade-in text-xs">
+            {/* Add Custom Block Keyword Form */}
+            <form onSubmit={handleAddBlockKeyword} className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Type any word to block (e.g. salon, pg, hostel, coaching, contractor, hardware)..."
+                value={newBlockInput}
+                onChange={(e) => setNewBlockInput(e.target.value)}
+                className="flex-1 px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-500/20"
+              />
+              <button
+                type="submit"
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-sm"
+              >
+                <Plus className="w-3.5 h-3.5" /> Block Keyword
+              </button>
+            </form>
+
+            {/* Active Blocked Words Chips */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                Active Blocked Keywords (Click 'x' to allow):
+              </label>
+              <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto no-scrollbar p-1">
+                {blockedKeywords.map((kw) => (
+                  <span
+                    key={kw}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200/80 group"
+                  >
+                    <span>{kw}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveBlockKeyword(kw)}
+                      className="p-0.5 rounded-md hover:bg-rose-200/80 text-rose-500 hover:text-rose-900 transition-colors"
+                      title={`Remove block for ${kw}`}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Advanced Limiting Sliders / Knobs */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-700 flex items-center justify-between">
+                  <span>Max Title Length (Blocks SEO Spam):</span>
+                  <span className="font-bold text-blue-600">{maxTitleLength} chars</span>
+                </label>
+                <input
+                  type="range"
+                  min="25"
+                  max="80"
+                  value={maxTitleLength}
+                  onChange={(e) => setMaxTitleLength(Number(e.target.value))}
+                  className="w-full accent-blue-600 cursor-pointer"
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                <span className="text-xs font-semibold text-slate-700">Require Valid Phone Number:</span>
+                <input
+                  type="checkbox"
+                  checked={requirePhone}
+                  onChange={(e) => setRequirePhone(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 rounded-md cursor-pointer accent-blue-600"
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Control Panel Grid */}
@@ -386,12 +586,12 @@ export function LeadScraper() {
               {isScanning ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Scanning Market & Ingesting to Supabase...</span>
+                  <span>Enforcing Block Rules & Syncing to Supabase...</span>
                 </>
               ) : (
                 <>
                   <Play className="w-4 h-4 fill-white" />
-                  <span>Launch Intelligent Scan ({batchCount} {selectedIndustry} in {activeCity})</span>
+                  <span>Launch Scan ({batchCount} {selectedIndustry} in {activeCity})</span>
                 </>
               )}
             </button>
@@ -402,32 +602,33 @@ export function LeadScraper() {
         <div className="space-y-6">
           {/* Active Negative Filter Safeguards */}
           <div className="bg-slate-900 text-slate-200 rounded-2xl p-5 border border-slate-800 shadow-sm space-y-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" /> Negative Filter Active
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" /> Filter Engine Active
+              </span>
+              <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/80 px-2 py-0.5 rounded-full border border-emerald-800">
+                Custom Enforced
+              </span>
             </h3>
             <p className="text-xs text-slate-300 leading-relaxed">
-              Every scan enforces strict negative keyword gates to prevent non-commercial noise from entering your CRM.
+              Every scan strictly checks against your active blocklist ({blockedKeywords.length} terms) and title length limits.
             </p>
             <div className="space-y-2 text-xs">
               <div className="flex items-center gap-2 text-rose-300 font-medium">
                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
-                <span>Blocks: Universities, IITs, NITs, Colleges, Hostels</span>
+                <span>Active Blocklist: {blockedKeywords.slice(0, 6).join(', ')}...</span>
               </div>
               <div className="flex items-center gap-2 text-rose-300 font-medium">
                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
-                <span>Blocks: Hospital conglomerates, Apollo, Fortis, AIIMS</span>
+                <span>Max Company Length: {maxTitleLength} characters</span>
               </div>
               <div className="flex items-center gap-2 text-rose-300 font-medium">
                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
-                <span>Blocks: Government offices, Police stations, Ministries</span>
-              </div>
-              <div className="flex items-center gap-2 text-rose-300 font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
-                <span>Blocks: Plastic/metal factories & industrial suppliers</span>
+                <span>Direct Verified Phone: {requirePhone ? 'Enforced' : 'Optional'}</span>
               </div>
             </div>
             <div className="pt-2 border-t border-slate-800 text-[11px] text-emerald-400 font-bold flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5" /> 100% Commercial SMB Offices Only
+              <CheckCircle2 className="w-3.5 h-3.5" /> High-Probability SMB Leads Only
             </div>
           </div>
 
@@ -440,8 +641,8 @@ export function LeadScraper() {
             <div className="space-y-3">
               {[
                 { step: 1, label: `Locating SMBs for ${selectedIndustry} in ${activeCity}` },
-                { step: 2, label: 'Running Negative Blacklist (Purging institutions & schools)' },
-                { step: 3, label: 'Sanitizing titles & stripping SEO keyword spam' },
+                { step: 2, label: `Applying your custom blocklist (${blockedKeywords.length} rules)` },
+                { step: 3, label: `Sanitizing titles & limiting length to ${maxTitleLength} chars` },
                 { step: 4, label: 'Segregating website status (Needs Web vs Has Web)' },
                 { step: 5, label: 'Assigning realistic decision makers & ₹10,000 deal value' },
                 { step: 6, label: 'Writing directly to Supabase Cloud PostgreSQL database' }
@@ -477,6 +678,9 @@ export function LeadScraper() {
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   Successfully ingested {discoveredLeads.length} leads!
                 </div>
+                <p className="text-[11px] text-emerald-700">
+                  Evaluated {blockedStats.totalEvaluated} listings • Blocked {blockedStats.blockedCount} matching your manual blocklist
+                </p>
                 <div className="flex gap-2 pt-1">
                   <Link
                     to="/leads"

@@ -179,6 +179,7 @@ type StoreContextType = {
   setSelectedItem: (item: SelectedItem) => void;
   isCloudSynced: boolean;
   isLoadingCloud: boolean;
+  refreshData: () => Promise<void>;
 };
 
 const StoreContext = createContext<StoreContextType | null>(null);
@@ -291,65 +292,70 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   }, [activities]);
 
   // Initial Data Fetch from Supabase Cloud
+  const fetchAllData = async () => {
+    if (!isSupabaseConfigured || !supabase) {
+      setIsLoadingCloud(false);
+      return;
+    }
+    setIsLoadingCloud(true);
+    try {
+      const client = supabase;
+      if (!client) return;
+
+      // Fetch all in parallel with expanded limit
+      const [
+        usersRes,
+        leadsRes,
+        companiesRes,
+        tasksRes,
+        eventsRes,
+        activitiesRes,
+      ] = await Promise.all([
+        client.from('users').select('*'),
+        client.from('leads').select('*').order('createdAt', { ascending: false }).limit(3000),
+        client.from('companies').select('*'),
+        client.from('tasks').select('*'),
+        client.from('events').select('*'),
+        client.from('activities').select('*').order('timestamp', { ascending: false }).limit(60),
+      ]);
+
+      if (usersRes.data && usersRes.data.length > 0) {
+        setUsers(usersRes.data as UserAccount[]);
+      }
+
+      if (leadsRes.data) {
+        setLeads(leadsRes.data as Lead[]);
+      }
+
+      if (companiesRes.data) {
+        setCompanies(companiesRes.data as Company[]);
+      }
+
+      if (tasksRes.data) {
+        setTasks(tasksRes.data as Task[]);
+      }
+
+      if (eventsRes.data) {
+        setEvents(eventsRes.data as Event[]);
+      }
+
+      if (activitiesRes.data && activitiesRes.data.length > 0) {
+        setActivities(activitiesRes.data as Activity[]);
+      }
+
+      setIsCloudSynced(true);
+    } catch (err) {
+      console.warn('Supabase fetch error, using cache:', err);
+    } finally {
+      setIsLoadingCloud(false);
+    }
+  };
+
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) {
       setIsLoadingCloud(false);
       return;
     }
-
-    const fetchAllData = async () => {
-      try {
-        const client = supabase;
-        if (!client) return;
-
-        // Fetch all in parallel
-        const [
-          usersRes,
-          leadsRes,
-          companiesRes,
-          tasksRes,
-          eventsRes,
-          activitiesRes,
-        ] = await Promise.all([
-          client.from('users').select('*'),
-          client.from('leads').select('*').order('createdAt', { ascending: false }),
-          client.from('companies').select('*'),
-          client.from('tasks').select('*'),
-          client.from('events').select('*'),
-          client.from('activities').select('*').order('timestamp', { ascending: false }).limit(60),
-        ]);
-
-        if (usersRes.data && usersRes.data.length > 0) {
-          setUsers(usersRes.data as UserAccount[]);
-        }
-
-        if (leadsRes.data) {
-          setLeads(leadsRes.data as Lead[]);
-        }
-
-        if (companiesRes.data) {
-          setCompanies(companiesRes.data as Company[]);
-        }
-
-        if (tasksRes.data) {
-          setTasks(tasksRes.data as Task[]);
-        }
-
-        if (eventsRes.data) {
-          setEvents(eventsRes.data as Event[]);
-        }
-
-        if (activitiesRes.data && activitiesRes.data.length > 0) {
-          setActivities(activitiesRes.data as Activity[]);
-        }
-
-        setIsCloudSynced(true);
-      } catch (err) {
-        console.warn('Supabase fetch error, using cache:', err);
-      } finally {
-        setIsLoadingCloud(false);
-      }
-    };
 
     fetchAllData();
 
@@ -683,6 +689,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       setSelectedItem,
       isCloudSynced,
       isLoadingCloud,
+      refreshData: fetchAllData,
     }}>
       {children}
     </StoreContext.Provider>
