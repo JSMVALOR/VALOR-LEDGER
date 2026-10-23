@@ -12,12 +12,6 @@ import { DashboardCharts as Dashboard } from './features/Dashboard/Dashboard';
 import { LeadsPage as Leads } from './features/Leads/Leads';
 import { Settings } from './features/Settings/Settings';
 
-import { IncompleteLeadsPage as IncompleteLeads } from './features/Leads/IncompleteLeads';
-import { CompaniesPage as Companies } from './features/Companies/Companies';
-import { Calendar } from './features/Calendar/Calendar';
-import { Tasks } from './features/Tasks/Tasks';
-import { EasyContact } from './features/EasyContact/EasyContact';
-import { ProcessedLeads } from './features/ProcessedLeads/ProcessedLeads';
 import { LeadScraper } from './features/Scraper/LeadScraper';
 
 function MainRouter() {
@@ -33,15 +27,16 @@ function MainRouter() {
         <Route path="/" element={<AppLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="leads" element={<Leads />} />
-          <Route path="incomplete-leads" element={<IncompleteLeads />} />
-          <Route path="companies" element={<Companies />} />
-          <Route path="calendar" element={<Calendar />} />
-          <Route path="tasks" element={<Tasks />} />
+          <Route path="radar" element={<LeadScraper />} />
+          <Route path="scraper" element={<Navigate to="/radar" replace />} />
           <Route path="settings" element={<Settings />} />
-          <Route path="easy-contact" element={<EasyContact />} />
-          <Route path="scraper" element={<LeadScraper />} />
-          <Route path="processed-leads" element={<ProcessedLeads />} />
-          {/* Catch-all redirect to dashboard */}
+          <Route path="easy-contact" element={<Navigate to="/leads" replace />} />
+          <Route path="companies" element={<Navigate to="/leads" replace />} />
+          <Route path="tasks" element={<Navigate to="/" replace />} />
+          <Route path="calendar" element={<Navigate to="/" replace />} />
+          <Route path="incomplete-leads" element={<Navigate to="/leads" replace />} />
+          <Route path="processed-leads" element={<Navigate to="/leads" replace />} />
+          {/* Catch-all redirect to today */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

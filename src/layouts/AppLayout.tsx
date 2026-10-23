@@ -81,41 +81,15 @@ export default function AppLayout() {
         )}
         
         {/* Navigation Categories */}
-        <nav className="flex-1 flex flex-col gap-5 overflow-y-auto no-scrollbar pr-0.5">
-          {/* Main Pipeline Section */}
-          <div className="space-y-1">
-            {!isSidebarCollapsed && (
-              <p className="px-3.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                Pipeline & Sourcing
-              </p>
-            )}
-            <NavItem to="/" icon={Home} label="Dashboard" />
-            <NavItem to="/leads" icon={Users} label="Pipeline & Deals" badge={leads.length} />
-            <NavItem to="/easy-contact" icon={Phone} label="Speed Dial" />
-            <NavItem to="/scraper" icon={Compass} label="Lead Scraper" />
-          </div>
-
-          {/* Management & Execution Section */}
-          <div className="space-y-1">
-            {!isSidebarCollapsed && (
-              <p className="px-3.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                Workspace
-              </p>
-            )}
-            <NavItem to="/companies" icon={Briefcase} label="Target Companies" />
-            <NavItem 
-              to="/tasks" 
-              icon={CheckSquare} 
-              label="Action Items" 
-              badge={tasks.filter(t => !t.completed).length > 0 ? tasks.filter(t => !t.completed).length : undefined} 
-            />
-            <NavItem to="/calendar" icon={Calendar} label="Meetings Schedule" />
-          </div>
+        <nav className="flex-1 flex flex-col gap-1 overflow-y-auto no-scrollbar pr-0.5">
+          <NavItem to="/" icon={Home} label="Today" />
+          <NavItem to="/leads" icon={Users} label="Pipeline" badge={leads.length} />
+          <NavItem to="/radar" icon={Compass} label="SMB Radar" />
         </nav>
 
         {/* Sidebar Footer */}
         <div className="pt-3 border-t border-slate-100 mt-auto">
-          <NavItem to="/settings" icon={Settings} label="System Settings" />
+          <NavItem to="/settings" icon={Settings} label={isSuperadmin ? "Admin & Team" : "My Account"} />
         </div>
       </aside>
 
@@ -143,7 +117,7 @@ export default function AppLayout() {
             <span className="font-bold text-slate-800">VALOR</span>
             <span className="text-slate-300">/</span>
             <span className="capitalize text-slate-600 font-semibold">
-              {location.pathname === '/' ? 'Command Center' : location.pathname.substring(1).replace('-', ' ')}
+              {location.pathname === '/' ? 'Today' : location.pathname === '/radar' ? 'SMB Radar' : location.pathname.substring(1).replace('-', ' ')}
             </span>
           </div>
 
@@ -188,7 +162,7 @@ export default function AppLayout() {
       </main>
 
       {/* Sleek Mobile Bottom Navigation Bar (< 768px) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/80 flex justify-around items-center px-2 py-2 z-40 pb-safe shadow-lg shadow-slate-200">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/80 flex justify-around items-center px-4 py-2 z-40 pb-safe shadow-lg shadow-slate-200">
         <Link 
           to="/" 
           className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-colors ${
@@ -196,7 +170,7 @@ export default function AppLayout() {
           }`}
         >
           <Home className="w-5 h-5" />
-          <span className="text-[10px]">Home</span>
+          <span className="text-[10px]">Today</span>
         </Link>
 
         <Link 
@@ -208,23 +182,15 @@ export default function AppLayout() {
           <Users className="w-5 h-5" />
           <span className="text-[10px]">Pipeline</span>
         </Link>
-        
-        {/* Floating Speed Dial Hero Button */}
-        <Link 
-          to="/easy-contact" 
-          className="relative -top-3 bg-blue-600 text-white p-3 rounded-2xl shadow-lg shadow-blue-500/30 flex items-center justify-center transform active:scale-95 transition-all"
-        >
-          <Phone className="w-5 h-5" />
-        </Link>
 
         <Link 
-          to="/tasks" 
+          to="/radar" 
           className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-colors ${
-            location.pathname === '/tasks' ? 'text-blue-600 font-bold' : 'text-slate-400'
+            location.pathname === '/radar' ? 'text-blue-600 font-bold' : 'text-slate-400'
           }`}
         >
-          <CheckSquare className="w-5 h-5" />
-          <span className="text-[10px]">Tasks</span>
+          <Compass className="w-5 h-5" />
+          <span className="text-[10px]">Radar</span>
         </Link>
 
         <Link 

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { supabase, isSupabaseConfigured } from './supabase';
 
 export type UserRole = 'superadmin' | 'user';
@@ -158,6 +158,7 @@ type StoreContextType = {
   teamMembers: TeamMember[];
   
   // Pipeline & Core Store
+  isSuperadmin: boolean;
   leads: Lead[];
   allLeads: Lead[];
   incompleteLeads: Lead[];
@@ -166,6 +167,8 @@ type StoreContextType = {
   updateLeadStage: (id: string, stage: LeadStage) => void;
   assignLead: (id: string, rep: string) => void;
   updateLead: (id: string, updates: Partial<Lead>) => void;
+  updateLeadNotes: (id: string, notes: string, nextFollowUp?: string) => void;
+  deleteLead: (id: string) => void;
   companies: Company[];
   addCompany: (company: Omit<Company, 'id'>) => void;
   tasks: Task[];
@@ -181,6 +184,26 @@ type StoreContextType = {
   isLoadingCloud: boolean;
   refreshData: () => Promise<void>;
 };
+
+export function getWhatsAppUrl(lead: Lead): string {
+  const cleanPhone = (lead.phone || '').replace(/[^0-9]/g, '');
+  const phoneWithCountry = cleanPhone.startsWith('91') && cleanPhone.length > 10 
+    ? cleanPhone 
+    : cleanPhone.length === 10 
+      ? `91${cleanPhone}` 
+      : cleanPhone;
+  
+  const hasWeb = Boolean(lead.website && lead.website.trim().length > 3);
+  const contactName = lead.contactPerson && lead.contactPerson !== 'Decision Maker' 
+    ? lead.contactPerson 
+    : 'Sir/Madam';
+
+  const pitch = !hasWeb
+    ? `Hello ${contactName}, I noticed ${lead.company} in ${lead.city} doesn't have an official online appointment booking & showcase website yet. We build high-trust digital portals for ${lead.industry.toLowerCase()} starting at ₹10,000. Would you be open to a quick 5-min demo this week?`
+    : `Hello ${contactName}, I came across ${lead.company} in ${lead.city}. We specialize in high-speed mobile overhauls, Google Maps SEO, and automated WhatsApp booking for ${lead.industry.toLowerCase()}. Would you be open to a 5-min website audit review this week?`;
+
+  return `https://wa.me/${phoneWithCountry}?text=${encodeURIComponent(pitch)}`;
+}
 
 const StoreContext = createContext<StoreContextType | null>(null);
 
@@ -566,7 +589,10 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const isSuperadmin = currentUser?.role === 'superadmin';
+
   const assignLead = (id: string, rep: string) => {
+    if (!isSuperadmin) return; // Only superadmin can reassign leads across team
     setLeads(prev => prev.map(l => {
       if (l.id === id) {
         logActivity(`Reassigned prospect to ${rep}:`, l.company);
@@ -577,6 +603,41 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
 
     if (isSupabaseConfigured && supabase) {
       supabase.from('leads').update({ assignedTo: rep }).eq('id', id).then();
+    }
+  };
+
+  const deleteLead = (id: string) => {
+    if (!isSuperadmin) return; // Only superadmin can permanently delete leads
+    const target = leads.find(l => l.id === id);
+    setLeads(prev => prev.filter(l => l.id !== id));
+    logActivity('Deleted prospect:', target ? target.company : id);
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('leads').delete().eq('id', id).then();
+    }
+  };
+
+  const updateLeadNotes = (id: string, notes: string, nextFollowUp?: string) => {
+    setLeads(prev => prev.map(l => {
+      if (l.id === id) {
+        const updated = { 
+          ...l, 
+          notes, 
+          ...(nextFollowUp ? { nextFollowUp } : {}),
+          lastContactedAt: Date.now() 
+        };
+        logActivity('Updated call note:', l.company);
+        return updated;
+      }
+      return l;
+    }));
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('leads').update({
+        notes,
+        ...(nextFollowUp ? { nextFollowUp } : {}),
+        lastContactedAt: Date.now()
+      }).eq('id', id).then();
     }
   };
 
@@ -650,6 +711,15 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const validLeads = leads.filter(hasContactInfo);
   const incompleteLeads = leads.filter(l => !hasContactInfo(l));
 
+  // Role-Scoped Leads:
+  // Superadmin sees all 800+ leads across the company.
+  // Regular Sales Reps strictly see leads assigned to them.
+  const scopedLeads = useMemo(() => {
+    if (!currentUser) return [];
+    if (isSuperadmin) return validLeads;
+    return validLeads.filter(l => (l.assignedTo || 'swaroop').toLowerCase() === currentUser.username.toLowerCase());
+  }, [validLeads, currentUser, isSuperadmin]);
+
   const teamMembers = users.map(u => ({
     id: u.username,
     name: u.name,
@@ -662,20 +732,23 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     <StoreContext.Provider value={{
       users,
       currentUser,
+      isSuperadmin,
       verifyFirstFactor,
       verifySecondFactorPin,
       updateCredentials,
       createUser,
       logout,
       teamMembers,
-      leads: validLeads,
-      allLeads: leads,
+      leads: scopedLeads,
+      allLeads: validLeads,
       incompleteLeads,
       addLead,
       addLeadsBatch,
       updateLeadStage,
       assignLead,
       updateLead,
+      updateLeadNotes,
+      deleteLead,
       companies,
       addCompany,
       tasks,

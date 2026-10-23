@@ -141,16 +141,18 @@ export function Settings() {
               <UserPlus className="w-3.5 h-3.5" /> Team Users
             </button>
           )}
-          <button
-            onClick={() => setActiveTab('audit')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
-              activeTab === 'audit' 
-                ? 'bg-blue-600 text-white shadow-sm' 
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <History className="w-3.5 h-3.5" /> Action Log
-          </button>
+          {isSuperadmin && (
+            <button
+              onClick={() => setActiveTab('audit')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
+                activeTab === 'audit' 
+                  ? 'bg-blue-600 text-white shadow-sm' 
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <History className="w-3.5 h-3.5" /> Action Log
+            </button>
+          )}
         </div>
       </div>
 
@@ -401,7 +403,7 @@ export function Settings() {
       )}
 
       {/* TAB 3: IMMUTABLE AUDIT LOG */}
-      {activeTab === 'audit' && (
+      {activeTab === 'audit' && isSuperadmin && (
         <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
             <div>

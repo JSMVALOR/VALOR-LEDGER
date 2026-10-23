@@ -20,10 +20,11 @@ import {
   X,
   Sliders,
   Trash2,
-  RotateCcw
+  RotateCcw,
+  MessageCircle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useStore, TEAM_MEMBERS, type Lead, type Priority, type LeadStage } from '../../lib/store';
+import { useStore, TEAM_MEMBERS, getWhatsAppUrl, type Lead, type Priority, type LeadStage } from '../../lib/store';
 
 const DEFAULT_BLOCKED_KEYWORDS = [
   'university',
@@ -118,7 +119,7 @@ const SMB_PRESETS: Record<string, { prefixes: string[]; titles: string[]; pitchN
 const POPULAR_CITIES = ['Bangalore', 'Chennai', 'Mumbai', 'Delhi', 'Hyderabad', 'Vijayawada', 'Pune'];
 
 export function LeadScraper() {
-  const { addLeadsBatch, currentUser, leads } = useStore();
+  const { addLeadsBatch, currentUser, leads, isSuperadmin } = useStore();
 
   const [selectedCity, setSelectedCity] = useState('Bangalore');
   const [customCity, setCustomCity] = useState('');
@@ -273,14 +274,14 @@ export function LeadScraper() {
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              Lead Scraper
+              SMB Radar
             </h1>
             <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
               {leads.length} in database · Supabase Live
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Discover verified SMB offices, clinics, and law chambers. Blocklist rules filter out junk automatically.
+            Discover verified commercial offices, clinics, and law chambers. Negative block rules filter out institutional junk automatically.
           </p>
         </div>
 
@@ -297,13 +298,15 @@ export function LeadScraper() {
             <span>Blocklist Rules ({blockedKeywords.length})</span>
           </button>
 
-          <button
-            onClick={handleResetBlocklist}
-            title="Reset to default blocklist"
-            className="p-1.5 rounded-xl border border-slate-200 text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
+          {isSuperadmin && (
+            <button
+              onClick={handleResetBlocklist}
+              title="Reset to default blocklist"
+              className="p-1.5 rounded-xl border border-slate-200 text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -757,12 +760,24 @@ export function LeadScraper() {
                         {lead.assignedTo}
                       </td>
                       <td className="py-2.5 px-3 text-right">
-                        <a
-                          href={`tel:${lead.phone}`}
-                          className="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1 rounded-lg text-[10px] shadow-sm transition-all"
-                        >
-                          <Phone className="w-2.5 h-2.5" /> Dial
-                        </a>
+                        <div className="inline-flex items-center gap-1 justify-end">
+                          <a
+                            href={`tel:${lead.phone}`}
+                            title="Direct Phone Call"
+                            className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[10px] shadow-sm transition-all"
+                          >
+                            <Phone className="w-3 h-3" />
+                          </a>
+                          <a
+                            href={getWhatsAppUrl(lead)}
+                            target="_blank"
+                            rel="noreferrer"
+                            title="WhatsApp Pitch"
+                            className="p-1.5 bg-[#25D366] hover:bg-[#1EBE5D] text-white font-bold rounded-lg text-[10px] shadow-sm transition-all"
+                          >
+                            <MessageCircle className="w-3 h-3" />
+                          </a>
+                        </div>
                       </td>
                     </tr>
                   );
