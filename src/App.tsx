@@ -1,18 +1,26 @@
-import { useState } from 'react';
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { StoreProvider, useStore } from './lib/store';
-import Preloader from './components/Preloader/Preloader';
 
 // Layouts
 import AppLayout from './layouts/AppLayout';
 
-// Features
-import { Login } from './features/Auth/Login';
-import { DashboardCharts as Dashboard } from './features/Dashboard/Dashboard';
+// Core Primary Feature (eager loaded for instant first paint)
 import { LeadsPage as Leads } from './features/Leads/Leads';
-import { Settings } from './features/Settings/Settings';
+import { Login } from './features/Auth/Login';
 
-import { LeadScraper } from './features/Scraper/LeadScraper';
+// Secondary Features (code-split for optimal initial load speed)
+const TodayDashboard = lazy(() => import('./features/Dashboard/Dashboard'));
+const LeadScraper = lazy(() => import('./features/Scraper/LeadScraper').then(m => ({ default: m.LeadScraper })));
+const Settings = lazy(() => import('./features/Settings/Settings').then(m => ({ default: m.Settings })));
+
+function RouteFallback() {
+  return (
+    <div className="flex items-center justify-center py-20 text-slate-400 text-xs font-semibold animate-pulse">
+      Loading view...
+    </div>
+  );
+}
 
 function MainRouter() {
   const { currentUser } = useStore();
@@ -25,18 +33,43 @@ function MainRouter() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<AppLayout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="leads" element={<Leads />} />
-          <Route path="radar" element={<LeadScraper />} />
+          {/* LEADS FIRST: Primary root index is the Leads Pipeline */}
+          <Route index element={<Leads />} />
+          <Route path="leads" element={<Navigate to="/" replace />} />
+          
+          <Route 
+            path="today" 
+            element={
+              <Suspense fallback={<RouteFallback />}>
+                <TodayDashboard />
+              </Suspense>
+            } 
+          />
+          <Route 
+            path="radar" 
+            element={
+              <Suspense fallback={<RouteFallback />}>
+                <LeadScraper />
+              </Suspense>
+            } 
+          />
           <Route path="scraper" element={<Navigate to="/radar" replace />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="easy-contact" element={<Navigate to="/leads" replace />} />
-          <Route path="companies" element={<Navigate to="/leads" replace />} />
-          <Route path="tasks" element={<Navigate to="/" replace />} />
-          <Route path="calendar" element={<Navigate to="/" replace />} />
-          <Route path="incomplete-leads" element={<Navigate to="/leads" replace />} />
-          <Route path="processed-leads" element={<Navigate to="/leads" replace />} />
-          {/* Catch-all redirect to today */}
+          <Route 
+            path="settings" 
+            element={
+              <Suspense fallback={<RouteFallback />}>
+                <Settings />
+              </Suspense>
+            } 
+          />
+
+          {/* Clean Redirects */}
+          <Route path="easy-contact" element={<Navigate to="/" replace />} />
+          <Route path="companies" element={<Navigate to="/" replace />} />
+          <Route path="tasks" element={<Navigate to="/today" replace />} />
+          <Route path="calendar" element={<Navigate to="/today" replace />} />
+          <Route path="incomplete-leads" element={<Navigate to="/" replace />} />
+          <Route path="processed-leads" element={<Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
@@ -44,17 +77,10 @@ function MainRouter() {
   );
 }
 
-function App() {
-  const [loading, setLoading] = useState(true);
-
+export default function App() {
   return (
     <StoreProvider>
-      {loading && <Preloader onComplete={() => setLoading(false)} />}
-      <div style={{ opacity: loading ? 0 : 1, transition: 'opacity 0.5s ease', height: '100vh', overflow: 'hidden' }}>
-        <MainRouter />
-      </div>
+      <MainRouter />
     </StoreProvider>
   );
 }
-
-export default App;

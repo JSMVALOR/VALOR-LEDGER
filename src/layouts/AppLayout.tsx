@@ -1,17 +1,16 @@
 import { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { 
-  Home, 
   Users, 
-  Briefcase, 
-  Calendar, 
-  CheckSquare, 
+  Clock, 
+  Compass, 
   Settings, 
-  Phone, 
   ChevronLeft, 
   ChevronRight, 
   LogOut,
-  Compass
+  ChevronDown,
+  ShieldCheck,
+  UserCheck
 } from 'lucide-react';
 
 import ValorLogo from '../components/shared/ValorLogo';
@@ -19,10 +18,9 @@ import { useStore } from '../lib/store';
 
 export default function AppLayout() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const { currentUser, logout, leads, tasks, isCloudSynced, isLoadingCloud } = useStore();
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const { currentUser, switchUser, logout, leads, isSuperadmin, isCloudSynced, isLoadingCloud, users } = useStore();
   const location = useLocation();
-
-  const isSuperadmin = currentUser?.role === 'superadmin';
 
   const NavItem = ({ to, icon: Icon, label, badge, badgeColor }: { to: string; icon: any; label: string; badge?: number | string; badgeColor?: string }) => {
     const isActive = location.pathname === to;
@@ -61,7 +59,7 @@ export default function AppLayout() {
           {!isSidebarCollapsed ? (
             <ValorLogo className="scale-90 origin-left transition-all" />
           ) : (
-            <span className="text-blue-600 font-extrabold text-xl">V</span>
+            <span className="text-blue-600 font-black text-xl">V</span>
           )}
           <button 
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
@@ -82,8 +80,8 @@ export default function AppLayout() {
         
         {/* Navigation Categories */}
         <nav className="flex-1 flex flex-col gap-1 overflow-y-auto no-scrollbar pr-0.5">
-          <NavItem to="/" icon={Home} label="Today" />
-          <NavItem to="/leads" icon={Users} label="Pipeline" badge={leads.length} />
+          <NavItem to="/" icon={Users} label="Pipeline" badge={leads.length} />
+          <NavItem to="/today" icon={Clock} label="Today's Queue" />
           <NavItem to="/radar" icon={Compass} label="SMB Radar" />
         </nav>
 
@@ -105,9 +103,14 @@ export default function AppLayout() {
               <span className={`w-1.5 h-1.5 rounded-full ${isCloudSynced ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`}></span>
               <span>{isCloudSynced ? 'Live' : 'Syncing'}</span>
             </div>
-            <Link to="/settings" className="w-7 h-7 rounded-full bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center font-bold text-xs">
-              {((currentUser?.name || currentUser?.username || 'V').substring(0, 1)).toUpperCase()}
-            </Link>
+            
+            <button
+              onClick={() => setShowUserDropdown(!showUserDropdown)}
+              className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-800"
+            >
+              <span>{currentUser?.name?.split(' ')[0] || 'User'}</span>
+              <ChevronDown className="w-3 h-3 text-slate-500" />
+            </button>
           </div>
         </header>
 
@@ -116,8 +119,8 @@ export default function AppLayout() {
           <div className="text-xs text-slate-400 flex items-center gap-2 font-medium">
             <span className="font-bold text-slate-800">VALOR</span>
             <span className="text-slate-300">/</span>
-            <span className="capitalize text-slate-600 font-semibold">
-              {location.pathname === '/' ? 'Today' : location.pathname === '/radar' ? 'SMB Radar' : location.pathname.substring(1).replace('-', ' ')}
+            <span className="capitalize text-slate-700 font-semibold">
+              {location.pathname === '/' ? 'Pipeline' : location.pathname === '/today' ? "Today's Queue" : location.pathname === '/radar' ? 'SMB Radar' : location.pathname.substring(1).replace('-', ' ')}
             </span>
           </div>
 
@@ -130,27 +133,83 @@ export default function AppLayout() {
 
             <div className="h-4 w-px bg-slate-200" />
 
-            <div className="flex items-center gap-2.5">
-              <div className="flex flex-col items-end">
-                <span className="text-xs font-bold text-slate-900 leading-none">
-                  {currentUser?.name || currentUser?.username || 'Team User'}
-                </span>
-                <span className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">
-                  {currentUser?.role || 'user'}
-                </span>
-              </div>
-
-              <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center font-bold text-xs">
-                {((currentUser?.name || currentUser?.username || 'V').substring(0, 2)).toUpperCase()}
-              </div>
-
+            {/* Interactive 1-Click Role & Account Switcher */}
+            <div className="relative">
               <button
-                onClick={logout}
-                title="Sign Out"
-                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors ml-0.5"
+                onClick={() => setShowUserDropdown(!showUserDropdown)}
+                className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-all text-left shadow-2xs group"
               >
-                <LogOut className="w-4 h-4" />
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs ${
+                  isSuperadmin ? 'bg-blue-600 text-white' : 'bg-slate-800 text-white'
+                }`}>
+                  {isSuperadmin ? <ShieldCheck className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                </div>
+
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-slate-900 leading-tight flex items-center gap-1.5">
+                    {currentUser?.name || currentUser?.username}
+                    <ChevronDown className="w-3 h-3 text-slate-400 group-hover:text-slate-600 transition-transform" />
+                  </span>
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    {isSuperadmin ? 'Superadmin (All Leads)' : 'Sales Rep (Assigned Only)'}
+                  </span>
+                </div>
               </button>
+
+              {/* Persona Switcher Dropdown */}
+              {showUserDropdown && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-30" 
+                    onClick={() => setShowUserDropdown(false)}
+                  />
+                  <div className="absolute right-0 mt-1.5 w-64 bg-white rounded-2xl border border-slate-200 shadow-xl z-40 py-2 animate-scale-in text-xs">
+                    <div className="px-3 py-1.5 border-b border-slate-100">
+                      <p className="font-semibold text-slate-400 uppercase text-[10px] tracking-wider">Switch Active Role & Scope:</p>
+                    </div>
+
+                    <div className="py-1">
+                      {users.map(u => {
+                        const isSelected = currentUser?.id === u.id;
+                        return (
+                          <button
+                            key={u.id}
+                            onClick={() => {
+                              switchUser(u.username);
+                              setShowUserDropdown(false);
+                            }}
+                            className={`w-full text-left px-3.5 py-2 flex items-center justify-between hover:bg-slate-50 transition-colors ${
+                              isSelected ? 'bg-blue-50/70 font-bold text-blue-700' : 'text-slate-700'
+                            }`}
+                          >
+                            <div>
+                              <p className="font-bold">{u.name}</p>
+                              <p className="text-[10px] text-slate-400">
+                                {u.role === 'superadmin' ? 'Superadmin • Full 827 leads' : `Rep • Assigned book`}
+                              </p>
+                            </div>
+                            {isSelected && (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-600 text-white">Active</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="border-t border-slate-100 pt-1 px-1">
+                      <button
+                        onClick={() => {
+                          logout();
+                          setShowUserDropdown(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-rose-600 hover:bg-rose-50 rounded-xl font-semibold flex items-center gap-2 transition-colors"
+                      >
+                        <LogOut className="w-3.5 h-3.5" /> Sign Out
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </header>
@@ -169,18 +228,18 @@ export default function AppLayout() {
             location.pathname === '/' ? 'text-blue-600 font-bold' : 'text-slate-400'
           }`}
         >
-          <Home className="w-5 h-5" />
-          <span className="text-[10px]">Today</span>
+          <Users className="w-5 h-5" />
+          <span className="text-[10px]">Pipeline</span>
         </Link>
 
         <Link 
-          to="/leads" 
+          to="/today" 
           className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-colors ${
-            location.pathname === '/leads' ? 'text-blue-600 font-bold' : 'text-slate-400'
+            location.pathname === '/today' ? 'text-blue-600 font-bold' : 'text-slate-400'
           }`}
         >
-          <Users className="w-5 h-5" />
-          <span className="text-[10px]">Pipeline</span>
+          <Clock className="w-5 h-5" />
+          <span className="text-[10px]">Today</span>
         </Link>
 
         <Link 

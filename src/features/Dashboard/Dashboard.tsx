@@ -81,13 +81,13 @@ export function DashboardCharts() {
 
         <div className="flex items-center gap-2">
           <Link
-            to="/leads"
+            to="/"
             className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition-colors flex items-center gap-1.5"
           >
             <Zap className="w-3.5 h-3.5" /> Start Outbound Dialer
           </Link>
           <Link
-            to="/leads"
+            to="/"
             className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors flex items-center gap-1.5"
           >
             View Pipeline <ChevronRight className="w-3.5 h-3.5" />
@@ -232,7 +232,7 @@ export function DashboardCharts() {
           </div>
 
           <div className="pt-3 border-t border-slate-100 text-center">
-            <Link to="/leads" className="text-xs font-semibold text-blue-600 hover:underline">
+            <Link to="/" className="text-xs font-semibold text-blue-600 hover:underline">
               Inspect Full Pipeline Matrix →
             </Link>
           </div>
@@ -321,7 +321,7 @@ export function DashboardCharts() {
                 View Full Audit Logs in Settings →
               </Link>
             ) : (
-              <Link to="/leads" className="text-xs font-semibold text-blue-600 hover:underline">
+              <Link to="/" className="text-xs font-semibold text-blue-600 hover:underline">
                 Go to My Assigned Pipeline →
               </Link>
             )}

@@ -150,6 +150,8 @@ type StoreContextType = {
   // Authentication & RBAC
   users: UserAccount[];
   currentUser: UserAccount | null;
+  login: (username: string, password?: string) => boolean;
+  switchUser: (username: string) => void;
   verifyFirstFactor: (username: string, pass: string) => UserAccount | null;
   verifySecondFactorPin: (user: UserAccount, pin: string, remember?: boolean) => boolean;
   updateCredentials: (userId: string, newPassword: string, newPin: string) => void;
@@ -226,13 +228,16 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
     return INITIAL_USERS;
   });
 
-  // Current session user
+  // Current session user (default to Swaroop / Superadmin for instant access)
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => {
     const saved = localStorage.getItem('valor_active_session') || sessionStorage.getItem('valor_active_session');
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) { /* fallback */ }
+      try { 
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.username) return parsed;
+      } catch (e) { /* fallback */ }
     }
-    return null;
+    return INITIAL_USERS[1]; // Default: Swaroop (Superadmin)
   });
 
   // Pipeline Collections (initialized from local storage cache if available)
@@ -450,6 +455,30 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
 
     if (isSupabaseConfigured && supabase) {
       supabase.from('activities').insert([newAct]).then();
+    }
+  };
+
+  // Clean 1-Step Login & Persona Switcher
+  const login = (username: string, password?: string): boolean => {
+    const found = users.find(u => u.username.toLowerCase() === username.trim().toLowerCase());
+    if (found && found.status === 'active') {
+      if (password && found.password !== password) {
+        return false;
+      }
+      setCurrentUser(found);
+      localStorage.setItem('valor_active_session', JSON.stringify(found));
+      logActivity('User signed in:', `${found.name} (${found.role})`);
+      return true;
+    }
+    return false;
+  };
+
+  const switchUser = (username: string) => {
+    const found = users.find(u => u.username.toLowerCase() === username.trim().toLowerCase());
+    if (found) {
+      setCurrentUser(found);
+      localStorage.setItem('valor_active_session', JSON.stringify(found));
+      logActivity('Switched active profile:', `${found.name} (${found.role})`);
     }
   };
 
@@ -733,6 +762,8 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       users,
       currentUser,
       isSuperadmin,
+      login,
+      switchUser,
       verifyFirstFactor,
       verifySecondFactorPin,
       updateCredentials,
