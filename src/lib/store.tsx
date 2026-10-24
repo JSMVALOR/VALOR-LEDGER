@@ -168,6 +168,7 @@ type StoreContextType = {
   addLeadsBatch: (leads: Omit<Lead, 'id' | 'createdAt'>[]) => Promise<Lead[]>;
   updateLeadStage: (id: string, stage: LeadStage) => void;
   assignLead: (id: string, rep: string) => void;
+  recordCallOutcome: (leadId: string, outcome: string, notes?: string, newStage?: LeadStage, followUp?: string) => void;
   updateLead: (id: string, updates: Partial<Lead>) => void;
   updateLeadNotes: (id: string, notes: string, nextFollowUp?: string) => void;
   deleteLead: (id: string) => void;
@@ -621,10 +622,12 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const isSuperadmin = currentUser?.role === 'superadmin';
 
   const assignLead = (id: string, rep: string) => {
-    if (!isSuperadmin) return; // Only superadmin can reassign leads across team
+    // Superadmin can reassign to anyone, and any user can self-claim/assign to themselves when calling!
+    if (!isSuperadmin && currentUser && currentUser.username.toLowerCase() !== rep.toLowerCase()) return;
+    
     setLeads(prev => prev.map(l => {
       if (l.id === id) {
-        logActivity(`Reassigned prospect to ${rep}:`, l.company);
+        logActivity(`Assigned prospect to ${rep}:`, l.company);
         return { ...l, assignedTo: rep };
       }
       return l;
@@ -632,6 +635,64 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
 
     if (isSupabaseConfigured && supabase) {
       supabase.from('leads').update({ assignedTo: rep }).eq('id', id).then();
+    }
+  };
+
+  const recordCallOutcome = (
+    leadId: string, 
+    outcome: string, 
+    notes?: string, 
+    newStage?: LeadStage, 
+    followUp?: string
+  ) => {
+    const caller = currentUser ? currentUser.username : 'swaroop';
+    const callerName = currentUser ? currentUser.name : 'Sales Rep';
+    const now = Date.now();
+
+    const stageMap: Record<string, LeadStage> = {
+      'interested': 'Meeting Scheduled',
+      'demo': 'Meeting Scheduled',
+      'callback': 'Contacted',
+      'no-answer': 'Contacted',
+      'rejected': 'Lost',
+      'wrong-number': 'Lost',
+    };
+
+    const finalStage = newStage || stageMap[outcome] || 'Contacted';
+
+    setLeads(prev => prev.map(l => {
+      if (l.id === leadId) {
+        const outcomeHeader = `[${new Date(now).toLocaleDateString()} ${callerName}] ${outcome.toUpperCase()}`;
+        const newNoteEntry = notes ? `${outcomeHeader}: ${notes}` : outcomeHeader;
+        const combinedNotes = l.notes ? `${newNoteEntry}\n${l.notes}` : newNoteEntry;
+
+        const updated = {
+          ...l,
+          assignedTo: caller, // automatically claimed and assigned to caller!
+          stage: finalStage,
+          lastContactedAt: now,
+          notes: combinedNotes,
+          ...(followUp ? { nextFollowUp: followUp } : {})
+        };
+        logActivity(`Call Outcome (${outcome}):`, `${l.company} claimed & updated by ${callerName}`);
+        return updated;
+      }
+      return l;
+    }));
+
+    if (isSupabaseConfigured && supabase) {
+      const target = leads.find(l => l.id === leadId);
+      const outcomeHeader = `[${new Date(now).toLocaleDateString()} ${callerName}] ${outcome.toUpperCase()}`;
+      const newNoteEntry = notes ? `${outcomeHeader}: ${notes}` : outcomeHeader;
+      const combinedNotes = target?.notes ? `${newNoteEntry}\n${target.notes}` : newNoteEntry;
+
+      supabase.from('leads').update({
+        assignedTo: caller,
+        stage: finalStage,
+        lastContactedAt: now,
+        notes: combinedNotes,
+        ...(followUp ? { nextFollowUp: followUp } : {})
+      }).eq('id', leadId).then();
     }
   };
 
@@ -777,6 +838,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       addLeadsBatch,
       updateLeadStage,
       assignLead,
+      recordCallOutcome,
       updateLead,
       updateLeadNotes,
       deleteLead,
