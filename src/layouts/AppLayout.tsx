@@ -80,7 +80,7 @@ export default function AppLayout() {
         
         {/* Navigation Categories */}
         <nav className="flex-1 flex flex-col gap-1 overflow-y-auto no-scrollbar pr-0.5">
-          <NavItem to="/" icon={Users} label="Pipeline" badge={leads.length} />
+          <NavItem to="/" icon={Users} label="Leads" badge={leads.length} />
           <NavItem to="/today" icon={Clock} label="Today's Queue" />
           <NavItem to="/radar" icon={Compass} label="SMB Radar" />
         </nav>
@@ -120,7 +120,7 @@ export default function AppLayout() {
             <span className="font-bold text-slate-800">VALOR</span>
             <span className="text-slate-300">/</span>
             <span className="capitalize text-slate-700 font-semibold">
-              {location.pathname === '/' ? 'Pipeline' : location.pathname === '/today' ? "Today's Queue" : location.pathname === '/radar' ? 'SMB Radar' : location.pathname.substring(1).replace('-', ' ')}
+              {location.pathname === '/' ? 'Leads' : location.pathname === '/today' ? "Today's Queue" : location.pathname === '/radar' ? 'SMB Radar' : location.pathname.substring(1).replace('-', ' ')}
             </span>
           </div>
 
@@ -229,7 +229,7 @@ export default function AppLayout() {
           }`}
         >
           <Users className="w-5 h-5" />
-          <span className="text-[10px]">Pipeline</span>
+          <span className="text-[10px]">Leads</span>
         </Link>
 
         <Link 

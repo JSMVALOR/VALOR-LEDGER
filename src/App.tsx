@@ -5,11 +5,11 @@ import { StoreProvider, useStore } from './lib/store';
 // Layouts
 import AppLayout from './layouts/AppLayout';
 
-// Core Primary Feature (eager loaded for instant first paint)
-import { LeadsPage as Leads } from './features/Leads/Leads';
+// Core Clean Leads Page (No reps, pure high-clarity leads workspace)
+import { CleanLeadsPage } from './features/Leads/CleanLeadsPage';
 import { Login } from './features/Auth/Login';
 
-// Secondary Features (code-split for optimal initial load speed)
+// Secondary Features (code-split)
 const TodayDashboard = lazy(() => import('./features/Dashboard/Dashboard'));
 const LeadScraper = lazy(() => import('./features/Scraper/LeadScraper').then(m => ({ default: m.LeadScraper })));
 const Settings = lazy(() => import('./features/Settings/Settings').then(m => ({ default: m.Settings })));
@@ -33,8 +33,8 @@ function MainRouter() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<AppLayout />}>
-          {/* LEADS FIRST: Primary root index is the Leads Pipeline */}
-          <Route index element={<Leads />} />
+          {/* LEADS FIRST: Primary root index is the Clean Leads Page */}
+          <Route index element={<CleanLeadsPage />} />
           <Route path="leads" element={<Navigate to="/" replace />} />
           
           <Route 
