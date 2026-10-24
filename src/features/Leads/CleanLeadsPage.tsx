@@ -182,9 +182,17 @@ export function CleanLeadsPage() {
     assignLead(lead.id, caller);
     updateLeadStage(lead.id, 'Contacted');
 
-    // Launch call in background
+    // Launch call in background via anchor click to prevent page navigation cancellation
     const cleanPhone = (lead.phone || '').split('/')[0].replace(/[^0-9+]/g, '');
-    window.location.href = `tel:${cleanPhone}`;
+    try {
+      const a = document.createElement('a');
+      a.href = `tel:${cleanPhone}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (e) {
+      // fallback
+    }
 
     // Present the Call Outcome Logger modal immediately
     setCallingLead({ ...lead, assignedTo: caller, stage: 'Contacted' });
